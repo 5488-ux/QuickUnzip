@@ -28,11 +28,11 @@ jobs:
         # Decode p12
         echo "$P12_BASE64" | base64 --decode > "$CERT_DIR/cert_original.p12"
 
-        # Install OpenSSL 3 and re-encode p12 for macOS compatibility
-        brew install openssl@3 2>/dev/null || true
+        # Re-encode p12 using Homebrew OpenSSL (supports legacy format)
         OPENSSL=$(brew --prefix openssl@3)/bin/openssl
-        $OPENSSL pkcs12 -in "$CERT_DIR/cert_original.p12" -out "$CERT_DIR/cert.pem" -nodes -legacy -passin pass:"$P12_PASSWORD"
-        $OPENSSL pkcs12 -in "$CERT_DIR/cert.pem" -export -out "$CERT_DIR/cert.p12" -passout pass:temp123
+        $OPENSSL pkcs12 -in "$CERT_DIR/cert_original.p12" -clcerts -nokeys -out "$CERT_DIR/cert.pem" -legacy -passin pass:"$P12_PASSWORD"
+        $OPENSSL pkcs12 -in "$CERT_DIR/cert_original.p12" -nocerts -nodes -out "$CERT_DIR/key.pem" -legacy -passin pass:"$P12_PASSWORD"
+        $OPENSSL pkcs12 -export -in "$CERT_DIR/cert.pem" -inkey "$CERT_DIR/key.pem" -out "$CERT_DIR/cert.p12" -passout pass:temp123
 
         # Create keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
