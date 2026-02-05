@@ -31,12 +31,12 @@ struct FileListView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .searchable(text: $vm.searchText, prompt: "Search files")
+        .searchable(text: $vm.searchText, prompt: "搜索文件")
         .navigationTitle(vm.title)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Menu {
-                    Picker("Sort", selection: $vm.sortOption) {
+                    Picker("排序", selection: $vm.sortOption) {
                         ForEach(SortOption.allCases, id: \.self) { opt in
                             Label(opt.rawValue, systemImage: sortIcon(opt))
                                 .tag(opt)
@@ -44,7 +44,7 @@ struct FileListView: View {
                     }
                     Divider()
                     Button(action: { vm.sortAscending.toggle(); vm.sortFiles() }) {
-                        Label(vm.sortAscending ? "Descending" : "Ascending",
+                        Label(vm.sortAscending ? "降序" : "升序",
                               systemImage: vm.sortAscending ? "arrow.down" : "arrow.up")
                     }
                 } label: {
@@ -55,7 +55,7 @@ struct FileListView: View {
         .onChange(of: vm.sortOption) { _ in vm.sortFiles() }
         .overlay {
             if vm.filteredFiles.isEmpty {
-                EmptyStateView(icon: "folder", message: "No files found")
+                EmptyStateView(icon: "folder", message: "暂无文件")
             }
         }
     }

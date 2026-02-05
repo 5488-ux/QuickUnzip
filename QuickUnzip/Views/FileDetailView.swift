@@ -22,7 +22,7 @@ struct FileDetailView: View {
                         .font(.headline)
                     Text(item.formattedSize)
                         .foregroundColor(.secondary)
-                    Text("Preview not available for this file type")
+                    Text("此文件类型暂不支持预览")
                         .foregroundColor(.secondary)
                         .font(.caption)
                 }

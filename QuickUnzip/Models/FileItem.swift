@@ -62,7 +62,7 @@ struct FileItem: Identifiable, Hashable {
     var isPreviewable: Bool { isImage || isText || isPDF }
 
     var formattedSize: String {
-        if isDirectory { return "--" }
+        if isDirectory { return "文件夹" }
         let formatter = ByteCountFormatter()
         formatter.countStyle = .file
         return formatter.string(fromByteCount: size)
@@ -77,8 +77,8 @@ struct FileItem: Identifiable, Hashable {
 }
 
 enum SortOption: String, CaseIterable {
-    case name = "Name"
-    case size = "Size"
-    case date = "Date"
-    case type = "Type"
+    case name = "名称"
+    case size = "大小"
+    case date = "日期"
+    case type = "类型"
 }

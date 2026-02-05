@@ -17,7 +17,7 @@ struct HomeView: View {
 
                         // Recent Archives
                         if !store.archives.isEmpty {
-                            sectionHeader("Archives", icon: "doc.zipper")
+                            sectionHeader("压缩包", icon: "doc.zipper")
                             ForEach(store.archives) { item in
                                 ArchiveRow(item: item) {
                                     vm.extract(item.url, store: store)
@@ -30,7 +30,7 @@ struct HomeView: View {
 
                         // Recent Extractions
                         if !store.recentExtractions.isEmpty {
-                            sectionHeader("Recent", icon: "clock")
+                            sectionHeader("最近解压", icon: "clock")
                             ForEach(store.recentExtractions, id: \.self) { url in
                                 NavigationLink(destination: FileListView(url: url)) {
                                     HStack {
@@ -53,11 +53,11 @@ struct HomeView: View {
                         }
 
                         // Browse Extracted
-                        NavigationLink(destination: FileListView(url: store.extractedURL, title: "All Extracted")) {
+                        NavigationLink(destination: FileListView(url: store.extractedURL, title: "全部文件")) {
                             HStack {
                                 Image(systemName: "folder.badge.gearshape")
                                     .foregroundColor(Color(hex: "667eea"))
-                                Text("Browse All Extracted Files")
+                                Text("浏览全部已解压文件")
                                     .foregroundColor(.primary)
                                 Spacer()
                                 Image(systemName: "chevron.right")
@@ -79,7 +79,7 @@ struct HomeView: View {
                     extractionOverlay
                 }
             }
-            .navigationTitle("QuickUnzip")
+            .navigationTitle("快速解压")
             .sheet(isPresented: $vm.showFilePicker) {
                 DocumentPicker { url in
                     vm.importAndExtract(url: url, store: store)
@@ -90,8 +90,8 @@ struct HomeView: View {
                     FileListView(url: url)
                 }
             }
-            .alert("Error", isPresented: $vm.showError) {
-                Button("OK") {}
+            .alert("错误", isPresented: $vm.showError) {
+                Button("确定") {}
             } message: {
                 Text(vm.errorMessage)
             }
@@ -112,10 +112,10 @@ struct HomeView: View {
                         .font(.system(size: 36))
                         .foregroundColor(.white)
                 }
-                Text("Import Archive")
+                Text("导入压缩包")
                     .font(.headline)
                     .foregroundColor(.primary)
-                Text("ZIP files supported")
+                Text("支持 ZIP 格式文件")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -135,7 +135,7 @@ struct HomeView: View {
                 ProgressView(value: vm.extractionProgress)
                     .progressViewStyle(.linear)
                     .tint(Color(hex: "667eea"))
-                Text("Extracting... \(Int(vm.extractionProgress * 100))%")
+                Text("解压中... \(Int(vm.extractionProgress * 100))%")
                     .font(.subheadline)
                     .foregroundColor(.white)
             }
@@ -180,7 +180,7 @@ struct ArchiveRow: View {
             }
             Spacer()
             Button(action: onExtract) {
-                Text("Extract")
+                Text("解压")
                     .font(.caption.weight(.semibold))
                     .foregroundColor(.white)
                     .padding(.horizontal, 14)
@@ -197,7 +197,7 @@ struct ArchiveRow: View {
         .cornerRadius(12)
         .contextMenu {
             Button(role: .destructive, action: onDelete) {
-                Label("Delete", systemImage: "trash")
+                Label("删除", systemImage: "trash")
             }
         }
     }
