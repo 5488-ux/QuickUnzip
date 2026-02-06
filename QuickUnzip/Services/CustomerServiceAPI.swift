@@ -55,8 +55,7 @@ struct UnreadCountResponse: Codable {
 class CustomerServiceAPI: ObservableObject {
     static let shared = CustomerServiceAPI()
 
-    // TODO: 修改为你的服务器地址
-    private let baseURL = "https://your-server.com/CustomerService"
+    private let baseURL = "https://192.238.206.160:22682/langlangy/CustomerService"
 
     @Published var unreadCount: Int = 0
 
