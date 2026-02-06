@@ -71,15 +71,31 @@ struct SettingsView: View {
                     HStack {
                         Text("版本")
                         Spacer()
-                        Text("2.9.0")
+                        Text("2.9.1")
                             .foregroundColor(.secondary)
                     }
 
                     HStack {
                         Text("构建")
                         Spacer()
-                        Text("29")
+                        Text("30")
                             .foregroundColor(.secondary)
+                    }
+
+                    NavigationLink {
+                        UpdateLogView()
+                    } label: {
+                        HStack {
+                            Text("更新日志")
+                            Spacer()
+                            Text("NEW")
+                                .font(.caption2.bold())
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color(hex: "ff6b6b"))
+                                .cornerRadius(4)
+                        }
                     }
 
                     Link(destination: URL(string: "https://github.com/5488-ux/QuickUnzip")!) {
