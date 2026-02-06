@@ -82,7 +82,7 @@ struct UpdateLogView: View {
             // v2.9.1
             UpdateLogCard(
                 version: "2.9.1",
-                date: "2024年2月6日",
+                date: "2026年2月6日",
                 isLatest: true,
                 changes: [
                     UpdateItem(type: .fix, text: "修复压缩密码不生效的问题"),
@@ -97,7 +97,7 @@ struct UpdateLogView: View {
             // v2.9.0
             UpdateLogCard(
                 version: "2.9.0",
-                date: "2024年2月6日",
+                date: "2026年2月6日",
                 isLatest: false,
                 changes: [
                     UpdateItem(type: .new, text: "新增压缩功能"),
@@ -112,7 +112,7 @@ struct UpdateLogView: View {
             // v2.8.0
             UpdateLogCard(
                 version: "2.8.0",
-                date: "2024年2月6日",
+                date: "2026年2月6日",
                 isLatest: false,
                 changes: [
                     UpdateItem(type: .new, text: "支持 RAR、7Z、TAR.GZ 解压"),
@@ -127,7 +127,7 @@ struct UpdateLogView: View {
             // v1.0.0
             UpdateLogCard(
                 version: "1.0.0",
-                date: "2024年2月5日",
+                date: "2026年2月5日",
                 isLatest: false,
                 changes: [
                     UpdateItem(type: .new, text: "首次发布"),
