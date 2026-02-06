@@ -26,7 +26,7 @@ class UpdateChecker: ObservableObject {
     @Published var showUpdateLog = false
 
     private let lastSeenVersionKey = "lastSeenAppVersion"
-    private let currentVersion = "2.9.4"
+    private let currentVersion = "3.0.0"
 
     func checkForUpdate() {
         let lastSeenVersion = UserDefaults.standard.string(forKey: lastSeenVersionKey) ?? ""
@@ -68,19 +68,26 @@ struct MainTabView: View {
                 }
                 .tag(1)
 
-            TextEditorMainView()
+            ToolsView()
                 .tabItem {
-                    Image(systemName: selectedTab == 2 ? "pencil.and.list.clipboard" : "pencil.and.list.clipboard")
-                    Text("编辑")
+                    Image(systemName: selectedTab == 2 ? "wrench.and.screwdriver.fill" : "wrench.and.screwdriver")
+                    Text("工具")
                 }
                 .tag(2)
 
-            ProfileView()
+            TextEditorMainView()
                 .tabItem {
-                    Image(systemName: selectedTab == 3 ? "person.fill" : "person")
-                    Text("我的")
+                    Image(systemName: selectedTab == 3 ? "pencil.and.list.clipboard" : "pencil.and.list.clipboard")
+                    Text("编辑")
                 }
                 .tag(3)
+
+            ProfileView()
+                .tabItem {
+                    Image(systemName: selectedTab == 4 ? "person.fill" : "person")
+                    Text("我的")
+                }
+                .tag(4)
         }
         .tint(Color(hex: "667eea"))
     }

@@ -1,0 +1,38 @@
+name: Simple Build
+
+on:
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  build:
+    runs-on: macos-13  # 使用 macOS 13
+
+    steps:
+    - name: 📥 Checkout 代码
+      uses: actions/checkout@v4
+
+    - name: 🔧 选择 Xcode 15
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+
+    - name: ℹ️ 显示环境信息
+      run: |
+        xcodebuild -version
+        swift --version
+        echo "当前目录: $(pwd)"
+        ls -la
+
+    - name: 🛠 尝试构建
+      run: |
+        xcodebuild -project QuickUnzip.xcodeproj \
+          -scheme QuickUnzip \
+          -configuration Release \
+          -destination 'generic/platform=iOS' \
+          CODE_SIGNING_ALLOWED=NO \
+          build
+      continue-on-error: true
+
+    - name: 📋 显示构建日志
+      if: always()
+      run: |
+        echo "构建完成或失败"
+        ls -R build/ 2>/dev/null || echo "没有 build 目录"
