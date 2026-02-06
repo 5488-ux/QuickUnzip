@@ -55,7 +55,7 @@ struct UnreadCountResponse: Codable {
 class CustomerServiceAPI: ObservableObject {
     static let shared = CustomerServiceAPI()
 
-    private let baseURL = "https://192.238.206.160:22682/langlangy/CustomerService"
+    private let baseURL = "https://781391.cn/admin"
 
     @Published var unreadCount: Int = 0
 
