@@ -117,16 +117,21 @@ struct CustomerServiceView: View {
             Button(action: {
                 viewModel.sendMessage(viewModel.inputText)
             }) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 36))
-                    .foregroundStyle(
+                Circle()
+                    .fill(
                         viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        ? Color.gray
-                        : LinearGradient(
+                        ? AnyShapeStyle(Color.gray.opacity(0.3))
+                        : AnyShapeStyle(LinearGradient(
                             colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
-                        )
+                        ))
+                    )
+                    .frame(width: 36, height: 36)
+                    .overlay(
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
                     )
             }
             .disabled(viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isSending)
