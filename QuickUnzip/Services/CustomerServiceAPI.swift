@@ -56,8 +56,11 @@ class CustomerServiceAPI: ObservableObject {
     static let shared = CustomerServiceAPI()
 
     private let baseURL = "https://781391.cn/admin"
+    private let messagesKey = "cs_cached_messages"
 
     @Published var unreadCount: Int = 0
+    @Published var cachedMessages: [CSMessage] = []
+    @Published var isRegistered: Bool = false
 
     private var deviceId: String {
         if let id = UserDefaults.standard.string(forKey: "cs_device_id") {
@@ -69,13 +72,45 @@ class CustomerServiceAPI: ObservableObject {
     }
 
     private var nickname: String {
-        UserDefaults.standard.string(forKey: "cs_nickname") ?? "用户"
+        UserDefaults.standard.string(forKey: "cs_nickname") ?? "iOS用户"
     }
 
     init() {
-        // 启动时检查未读消息
+        // 加载缓存的消息
+        loadCachedMessages()
+
+        // 启动时自动注册并检查未读消息
         Task {
+            await autoLogin()
             await checkUnreadCount()
+        }
+    }
+
+    // 自动登录/注册
+    func autoLogin() async {
+        do {
+            try await registerUser(nickname: nickname)
+            await MainActor.run {
+                self.isRegistered = true
+            }
+        } catch {
+            print("自动登录失败: \(error)")
+        }
+    }
+
+    // 缓存消息到本地
+    func cacheMessages(_ messages: [CSMessage]) {
+        cachedMessages = messages
+        if let data = try? JSONEncoder().encode(messages) {
+            UserDefaults.standard.set(data, forKey: messagesKey)
+        }
+    }
+
+    // 加载缓存的消息
+    func loadCachedMessages() {
+        if let data = UserDefaults.standard.data(forKey: messagesKey),
+           let messages = try? JSONDecoder().decode([CSMessage].self, from: data) {
+            cachedMessages = messages
         }
     }
 
@@ -129,9 +164,17 @@ class CustomerServiceAPI: ObservableObject {
         let (data, _) = try await URLSession.shared.data(from: url)
         let response = try JSONDecoder().decode(MessagesResponse.self, from: data)
 
-        // 更新未读数为0（因为已经读取了）
+        // 缓存消息到本地
         await MainActor.run {
             self.unreadCount = 0
+            if lastId == 0 {
+                self.cacheMessages(response.messages)
+            } else if !response.messages.isEmpty {
+                // 追加新消息
+                var allMessages = self.cachedMessages
+                allMessages.append(contentsOf: response.messages)
+                self.cacheMessages(allMessages)
+            }
         }
 
         return response.messages

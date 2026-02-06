@@ -298,13 +298,25 @@ class CustomerServiceViewModel: ObservableObject {
     private let api = CustomerServiceAPI.shared
     private var pollTimer: Timer?
 
+    init() {
+        // 立即加载缓存的消息
+        messages = api.cachedMessages
+    }
+
     func loadMessages() {
-        isLoading = true
+        // 先显示缓存的消息
+        if messages.isEmpty {
+            messages = api.cachedMessages
+        }
+
+        isLoading = messages.isEmpty
 
         Task {
             do {
-                // 先注册用户
-                try await api.registerUser(nickname: "iOS用户")
+                // 确保已注册
+                if !api.isRegistered {
+                    try await api.registerUser(nickname: "iOS用户")
+                }
 
                 // 获取消息
                 let msgs = try await api.getMessages()
@@ -319,6 +331,10 @@ class CustomerServiceViewModel: ObservableObject {
                 print("加载消息失败: \(error)")
                 await MainActor.run {
                     self.isLoading = false
+                    // 网络失败时使用缓存
+                    if self.messages.isEmpty {
+                        self.messages = self.api.cachedMessages
+                    }
                 }
             }
         }
@@ -340,6 +356,9 @@ class CustomerServiceViewModel: ObservableObject {
             createdAt: formatCurrentTime()
         )
         messages.append(tempMessage)
+
+        // 立即缓存
+        api.cacheMessages(messages)
 
         Task {
             do {
@@ -371,6 +390,8 @@ class CustomerServiceViewModel: ObservableObject {
     func stopPolling() {
         pollTimer?.invalidate()
         pollTimer = nil
+        // 停止轮询时保存消息
+        api.cacheMessages(messages)
     }
 
     private func pollNewMessages() {
