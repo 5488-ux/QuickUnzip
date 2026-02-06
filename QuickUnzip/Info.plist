@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>2.8.0</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>28</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
@@ -40,6 +40,39 @@
                 <string>com.pkware.zip-archive</string>
                 <string>public.zip-archive</string>
                 <string>public.archive</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>7Z Archive</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>org.7-zip.7-zip-archive</string>
+                <string>public.7-zip-archive</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>RAR Archive</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.rarlab.rar-archive</string>
+                <string>public.rar-archive</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>TAR Archive</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.tar-archive</string>
+                <string>org.gnu.gnu-zip-archive</string>
             </array>
         </dict>
     </array>
