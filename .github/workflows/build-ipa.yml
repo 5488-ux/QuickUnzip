@@ -30,7 +30,7 @@ jobs:
         ls -la
         ls -la QuickUnzip/ || true
 
-    - name: 创建缺失的视图文件
+    - name: 创建缺失的视图文件并添加到项目
       run: |
         # 创建 TextEditorMainView.swift（如果不存在）
         if [ ! -f "QuickUnzip/Views/TextEditorView.swift" ]; then
@@ -67,6 +67,57 @@ jobs:
         }
         EOF
         fi
+
+        # 安装 xcodeproj Ruby gem 来操作项目文件
+        gem install xcodeproj
+
+        # 创建 Ruby 脚本来添加文件到 Xcode 项目
+        cat > add_files.rb << 'RUBY'
+        require 'xcodeproj'
+
+        project_path = 'QuickUnzip.xcodeproj'
+        project = Xcodeproj::Project.open(project_path)
+
+        # 获取主 target
+        target = project.targets.first
+
+        # 要添加的文件列表
+        files_to_add = [
+          'QuickUnzip/Services/EncodingFixer.swift',
+          'QuickUnzip/Services/ArchiveCleaner.swift',
+          'QuickUnzip/Services/CompressionAnalyzer.swift',
+          'QuickUnzip/Services/QRCodeGenerator.swift',
+          'QuickUnzip/Views/ToolsView.swift',
+          'QuickUnzip/Views/Tools/EncodingFixerView.swift',
+          'QuickUnzip/Views/Tools/CleanerView.swift',
+          'QuickUnzip/Views/Tools/AnalyzerView.swift',
+          'QuickUnzip/Views/Tools/QRCodeView.swift',
+          'QuickUnzip/Views/TextEditorMainView.swift',
+          'QuickUnzip/Views/Components/ShareSheet.swift'
+        ]
+
+        files_to_add.each do |file_path|
+          next unless File.exist?(file_path)
+
+          # 检查文件是否已经在项目中
+          existing = project.files.find { |f| f.path == file_path }
+          next if existing
+
+          # 添加文件到项目
+          file_ref = project.new_file(file_path)
+
+          # 添加到编译阶段
+          target.add_file_references([file_ref])
+
+          puts "Added: #{file_path}"
+        end
+
+        project.save
+        puts "Project updated successfully!"
+        RUBY
+
+        # 运行脚本
+        ruby add_files.rb
 
     - name: 安装依赖（如果有 CocoaPods）
       run: |
