@@ -50,11 +50,11 @@ struct UpdateLogView: View {
                     .cornerRadius(8)
             }
 
-            Text("免费解压王 v2.9.2 正式发布！")
+            Text("免费解压王 v2.9.3 正式发布！")
                 .font(.subheadline.bold())
                 .foregroundColor(.white)
 
-            Text("本次更新新增在线客服功能，有任何问题可以随时咨询！我们会尽快回复您。")
+            Text("本次更新新增「我的」页面，整合客服、反馈、分享等功能，界面更美观！")
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.9))
                 .lineSpacing(4)
@@ -79,11 +79,26 @@ struct UpdateLogView: View {
                 .font(.headline)
                 .padding(.horizontal)
 
+            // v2.9.3
+            UpdateLogCard(
+                version: "2.9.3",
+                date: "2026年2月6日",
+                isLatest: true,
+                changes: [
+                    UpdateItem(type: .new, text: "新增「我的」页面"),
+                    UpdateItem(type: .new, text: "意见反馈功能"),
+                    UpdateItem(type: .new, text: "分享应用功能"),
+                    UpdateItem(type: .new, text: "存储统计卡片"),
+                    UpdateItem(type: .improve, text: "客服消息本地缓存"),
+                    UpdateItem(type: .improve, text: "界面全面美化")
+                ]
+            )
+
             // v2.9.2
             UpdateLogCard(
                 version: "2.9.2",
                 date: "2026年2月6日",
-                isLatest: true,
+                isLatest: false,
                 changes: [
                     UpdateItem(type: .new, text: "新增在线客服功能"),
                     UpdateItem(type: .new, text: "微信风格聊天界面"),

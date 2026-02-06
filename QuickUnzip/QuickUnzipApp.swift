@@ -26,7 +26,7 @@ class UpdateChecker: ObservableObject {
     @Published var showUpdateLog = false
 
     private let lastSeenVersionKey = "lastSeenAppVersion"
-    private let currentVersion = "2.9.2"
+    private let currentVersion = "2.9.3"
 
     func checkForUpdate() {
         let lastSeenVersion = UserDefaults.standard.string(forKey: lastSeenVersionKey) ?? ""
@@ -67,6 +67,13 @@ struct MainTabView: View {
                     Text("压缩")
                 }
                 .tag(1)
+
+            ProfileView()
+                .tabItem {
+                    Image(systemName: selectedTab == 2 ? "person.fill" : "person")
+                    Text("我的")
+                }
+                .tag(2)
         }
         .tint(Color(hex: "667eea"))
     }
