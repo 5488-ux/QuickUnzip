@@ -83,7 +83,7 @@ struct ProfileView: View {
                     .font(.title2.bold())
                     .foregroundColor(.primary)
 
-                Text("v2.9.3")
+                Text("v2.9.4")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -249,7 +249,7 @@ struct ProfileView: View {
             MenuRow(
                 icon: "info.circle",
                 title: "关于我们",
-                subtitle: "免费解压王 v2.9.3",
+                subtitle: "免费解压王 v2.9.4",
                 iconColors: [Color(hex: "667eea"), Color(hex: "764ba2")]
             ) {
                 // 关于页面

@@ -50,11 +50,11 @@ struct UpdateLogView: View {
                     .cornerRadius(8)
             }
 
-            Text("免费解压王 v2.9.3 正式发布！")
+            Text("免费解压王 v2.9.4 正式发布！")
                 .font(.subheadline.bold())
                 .foregroundColor(.white)
 
-            Text("本次更新新增「我的」页面，整合客服、反馈、分享等功能，界面更美观！")
+            Text("本次更新新增文本编辑器功能，支持编辑各种文本文件，还可以新建和保存！")
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.9))
                 .lineSpacing(4)
@@ -79,11 +79,26 @@ struct UpdateLogView: View {
                 .font(.headline)
                 .padding(.horizontal)
 
+            // v2.9.4
+            UpdateLogCard(
+                version: "2.9.4",
+                date: "2026年2月6日",
+                isLatest: true,
+                changes: [
+                    UpdateItem(type: .new, text: "新增文本编辑器"),
+                    UpdateItem(type: .new, text: "支持打开任意文件编辑"),
+                    UpdateItem(type: .new, text: "临时转换后缀功能"),
+                    UpdateItem(type: .new, text: "新建/保存 TXT 文件"),
+                    UpdateItem(type: .new, text: "字符/行数统计"),
+                    UpdateItem(type: .new, text: "导出文件功能")
+                ]
+            )
+
             // v2.9.3
             UpdateLogCard(
                 version: "2.9.3",
                 date: "2026年2月6日",
-                isLatest: true,
+                isLatest: false,
                 changes: [
                     UpdateItem(type: .new, text: "新增「我的」页面"),
                     UpdateItem(type: .new, text: "意见反馈功能"),
