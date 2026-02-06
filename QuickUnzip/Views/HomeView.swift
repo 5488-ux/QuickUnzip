@@ -60,7 +60,7 @@ struct HomeView: View {
                     extractionOverlay
                 }
             }
-            .navigationTitle("快速解压")
+            .navigationTitle("免费解压王")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     if store.isSelectionMode {
