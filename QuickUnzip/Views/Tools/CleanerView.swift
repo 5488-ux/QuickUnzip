@@ -418,7 +418,7 @@ struct CleanerView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 let outputName = archive.name.replacingOccurrences(of: ".zip", with: "_cleaned.zip")
-                let outputURL = store.archivesURL.appendingPathComponent(outputName)
+                let outputURL = store.documentsURL.appendingPathComponent(outputName)
 
                 try ArchiveCleaner.cleanArchive(zipURL: archive.url, to: outputURL, removeEmptyFolders: removeEmptyFolders)
 

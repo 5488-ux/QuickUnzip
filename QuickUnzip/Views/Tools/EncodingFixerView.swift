@@ -333,7 +333,7 @@ struct EncodingFixerView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 let outputName = archive.name.replacingOccurrences(of: ".zip", with: "_fixed.zip")
-                let outputURL = store.archivesURL.appendingPathComponent(outputName)
+                let outputURL = store.documentsURL.appendingPathComponent(outputName)
 
                 try EncodingFixer.fixEncoding(zipURL: archive.url, to: outputURL)
 
