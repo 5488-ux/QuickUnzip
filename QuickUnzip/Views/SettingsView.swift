@@ -66,19 +66,26 @@ struct SettingsView: View {
                     Text("支持的格式")
                 }
 
+                // Help & Support Section
+                Section {
+                    CustomerServiceRow()
+                } header: {
+                    Text("帮助与支持")
+                }
+
                 // About Section
                 Section {
                     HStack {
                         Text("版本")
                         Spacer()
-                        Text("2.9.1")
+                        Text("2.9.2")
                             .foregroundColor(.secondary)
                     }
 
                     HStack {
                         Text("构建")
                         Spacer()
-                        Text("30")
+                        Text("31")
                             .foregroundColor(.secondary)
                     }
 
@@ -254,5 +261,66 @@ struct FormatRow: View {
                 .foregroundColor(supported ? .green : .red)
         }
         .padding(.vertical, 2)
+    }
+}
+
+struct CustomerServiceRow: View {
+    @StateObject private var api = CustomerServiceAPI.shared
+    @State private var showCustomerService = false
+
+    var body: some View {
+        Button(action: {
+            showCustomerService = true
+        }) {
+            HStack {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(LinearGradient(
+                            colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 36, height: 36)
+
+                    Image(systemName: "headphones")
+                        .foregroundColor(.white)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("在线客服")
+                        .foregroundColor(.primary)
+                    Text("有问题随时咨询")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.leading, 8)
+
+                Spacer()
+
+                // 未读消息角标
+                if api.unreadCount > 0 {
+                    Text("\(api.unreadCount)")
+                        .font(.caption2.bold())
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.red)
+                        .cornerRadius(10)
+                }
+
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+        .sheet(isPresented: $showCustomerService) {
+            CustomerServiceView()
+        }
+        .onAppear {
+            Task {
+                await api.checkUnreadCount()
+            }
+        }
     }
 }

@@ -50,11 +50,11 @@ struct UpdateLogView: View {
                     .cornerRadius(8)
             }
 
-            Text("快速解压 v2.9.1 正式发布！")
+            Text("免费解压王 v2.9.2 正式发布！")
                 .font(.subheadline.bold())
                 .foregroundColor(.white)
 
-            Text("本次更新修复了压缩功能的多个问题，新增了密码保护、UTF-8文件名支持，并优化了整体稳定性。感谢大家的支持！")
+            Text("本次更新新增在线客服功能，有任何问题可以随时咨询！我们会尽快回复您。")
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.9))
                 .lineSpacing(4)
@@ -79,11 +79,24 @@ struct UpdateLogView: View {
                 .font(.headline)
                 .padding(.horizontal)
 
+            // v2.9.2
+            UpdateLogCard(
+                version: "2.9.2",
+                date: "2026年2月6日",
+                isLatest: true,
+                changes: [
+                    UpdateItem(type: .new, text: "新增在线客服功能"),
+                    UpdateItem(type: .new, text: "微信风格聊天界面"),
+                    UpdateItem(type: .new, text: "消息已读状态显示"),
+                    UpdateItem(type: .new, text: "快捷问题一键发送")
+                ]
+            )
+
             // v2.9.1
             UpdateLogCard(
                 version: "2.9.1",
                 date: "2026年2月6日",
-                isLatest: true,
+                isLatest: false,
                 changes: [
                     UpdateItem(type: .fix, text: "修复压缩密码不生效的问题"),
                     UpdateItem(type: .fix, text: "修复压缩后文件名乱码问题"),
