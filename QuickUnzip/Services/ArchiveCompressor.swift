@@ -30,7 +30,7 @@ enum CompressionFormat: String, CaseIterable, Identifiable {
         switch self {
         case .zip: return true
         case .sevenZip: return true
-        case .rar: return false // RAR compression requires license
+        case .rar: return false
         }
     }
 }
@@ -57,6 +57,15 @@ class ArchiveCompressor {
         }
     }
 
+    // MARK: - File Entry for tracking
+
+    private struct ZipFileEntry {
+        let relativePath: String
+        let fileData: Data
+        let crc32: UInt32
+        let localHeaderOffset: Int
+    }
+
     // MARK: - Public API
 
     static func compress(
@@ -80,7 +89,7 @@ class ArchiveCompressor {
         }
     }
 
-    // MARK: - ZIP Compression
+    // MARK: - ZIP Compression (Fixed)
 
     private static func compressToZIP(
         files: [URL],
@@ -88,23 +97,24 @@ class ArchiveCompressor {
         password: String?,
         progress: ((Double, String) -> Void)?
     ) throws {
-        var zipData = Data()
-
         // Collect all files (including files in directories)
         var allFiles: [(url: URL, relativePath: String)] = []
 
         for fileURL in files {
+            let accessing = fileURL.startAccessingSecurityScopedResource()
+            defer { if accessing { fileURL.stopAccessingSecurityScopedResource() } }
+
             let isDirectory = (try? fileURL.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
 
             if isDirectory {
                 let baseName = fileURL.lastPathComponent
-                let enumerator = FileManager.default.enumerator(at: fileURL, includingPropertiesForKeys: [.isDirectoryKey])
-
-                while let subURL = enumerator?.nextObject() as? URL {
-                    let subIsDir = (try? subURL.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
-                    if !subIsDir {
-                        let relativePath = baseName + "/" + subURL.path.replacingOccurrences(of: fileURL.path + "/", with: "")
-                        allFiles.append((subURL, relativePath))
+                if let enumerator = FileManager.default.enumerator(at: fileURL, includingPropertiesForKeys: [.isDirectoryKey]) {
+                    while let subURL = enumerator.nextObject() as? URL {
+                        let subIsDir = (try? subURL.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
+                        if !subIsDir {
+                            let relativePath = baseName + "/" + subURL.path.replacingOccurrences(of: fileURL.path + "/", with: "")
+                            allFiles.append((subURL, relativePath))
+                        }
                     }
                 }
             } else {
@@ -116,141 +126,140 @@ class ArchiveCompressor {
             throw CompressError.noFilesToCompress
         }
 
-        var localFileHeaders: [(offset: Int, header: Data)] = []
-        var currentOffset = 0
+        var zipData = Data()
+        var entries: [ZipFileEntry] = []
 
         // Write local file headers and data
         for (index, file) in allFiles.enumerated() {
-            progress?(Double(index) / Double(allFiles.count), file.relativePath)
+            progress?(Double(index) / Double(allFiles.count) * 0.8, file.relativePath)
 
-            guard file.url.startAccessingSecurityScopedResource() || FileManager.default.isReadableFile(atPath: file.url.path) else {
-                continue
-            }
-            defer { file.url.stopAccessingSecurityScopedResource() }
+            let accessing = file.url.startAccessingSecurityScopedResource()
+            defer { if accessing { file.url.stopAccessingSecurityScopedResource() } }
 
             guard let fileData = try? Data(contentsOf: file.url) else { continue }
 
             let fileName = file.relativePath
-            let fileNameData = fileName.data(using: .utf8) ?? Data()
+            guard let fileNameData = fileName.data(using: .utf8) else { continue }
 
-            // Compress the data
-            let (compressedData, compressionMethod) = compressData(fileData)
-
-            // CRC32
             let crc32 = computeCRC32(fileData)
+            let localHeaderOffset = zipData.count
+
+            // Store uncompressed for reliability
+            let storedData = fileData
+            let compressionMethod: UInt16 = 0 // Stored (no compression)
 
             // Local file header
             var header = Data()
 
-            // Signature
+            // Signature: PK\x03\x04
             header.append(contentsOf: [0x50, 0x4B, 0x03, 0x04])
-            // Version needed
-            header.append(contentsOf: [0x14, 0x00])
+            // Version needed to extract (2.0)
+            appendUInt16(&header, 20)
             // General purpose bit flag
-            header.append(contentsOf: [0x00, 0x00])
-            // Compression method (0 = stored, 8 = deflate)
-            header.append(contentsOf: withUnsafeBytes(of: compressionMethod.littleEndian) { Array($0.prefix(2)) })
-            // Mod time
-            header.append(contentsOf: [0x00, 0x00])
-            // Mod date
-            header.append(contentsOf: [0x00, 0x00])
-            // CRC32
-            header.append(contentsOf: withUnsafeBytes(of: crc32.littleEndian) { Array($0) })
+            appendUInt16(&header, 0)
+            // Compression method (0 = stored)
+            appendUInt16(&header, compressionMethod)
+            // Last mod file time
+            appendUInt16(&header, 0)
+            // Last mod file date
+            appendUInt16(&header, 0)
+            // CRC-32
+            appendUInt32(&header, crc32)
             // Compressed size
-            header.append(contentsOf: withUnsafeBytes(of: UInt32(compressedData.count).littleEndian) { Array($0) })
+            appendUInt32(&header, UInt32(storedData.count))
             // Uncompressed size
-            header.append(contentsOf: withUnsafeBytes(of: UInt32(fileData.count).littleEndian) { Array($0) })
+            appendUInt32(&header, UInt32(fileData.count))
             // File name length
-            header.append(contentsOf: withUnsafeBytes(of: UInt16(fileNameData.count).littleEndian) { Array($0) })
+            appendUInt16(&header, UInt16(fileNameData.count))
             // Extra field length
-            header.append(contentsOf: [0x00, 0x00])
+            appendUInt16(&header, 0)
             // File name
             header.append(fileNameData)
 
-            localFileHeaders.append((currentOffset, header))
-
+            // Write header and data
             zipData.append(header)
-            zipData.append(compressedData)
+            zipData.append(storedData)
 
-            currentOffset = zipData.count
+            // Track entry for central directory
+            entries.append(ZipFileEntry(
+                relativePath: fileName,
+                fileData: fileData,
+                crc32: crc32,
+                localHeaderOffset: localHeaderOffset
+            ))
         }
+
+        progress?(0.9, "正在写入目录...")
 
         // Write central directory
         let centralDirStart = zipData.count
-        var centralDirSize = 0
 
-        for (index, file) in allFiles.enumerated() {
-            guard let fileData = try? Data(contentsOf: file.url) else { continue }
-
-            let fileName = file.relativePath
-            let fileNameData = fileName.data(using: .utf8) ?? Data()
-
-            let (compressedData, compressionMethod) = compressData(fileData)
-            let crc32 = computeCRC32(fileData)
+        for entry in entries {
+            guard let fileNameData = entry.relativePath.data(using: .utf8) else { continue }
 
             var cdHeader = Data()
 
-            // Signature
+            // Signature: PK\x01\x02
             cdHeader.append(contentsOf: [0x50, 0x4B, 0x01, 0x02])
-            // Version made by
-            cdHeader.append(contentsOf: [0x14, 0x00])
-            // Version needed
-            cdHeader.append(contentsOf: [0x14, 0x00])
+            // Version made by (2.0, Unix)
+            appendUInt16(&cdHeader, 0x0314)
+            // Version needed to extract (2.0)
+            appendUInt16(&cdHeader, 20)
             // General purpose bit flag
-            cdHeader.append(contentsOf: [0x00, 0x00])
-            // Compression method
-            cdHeader.append(contentsOf: withUnsafeBytes(of: compressionMethod.littleEndian) { Array($0.prefix(2)) })
-            // Mod time
-            cdHeader.append(contentsOf: [0x00, 0x00])
-            // Mod date
-            cdHeader.append(contentsOf: [0x00, 0x00])
-            // CRC32
-            cdHeader.append(contentsOf: withUnsafeBytes(of: crc32.littleEndian) { Array($0) })
+            appendUInt16(&cdHeader, 0)
+            // Compression method (0 = stored)
+            appendUInt16(&cdHeader, 0)
+            // Last mod file time
+            appendUInt16(&cdHeader, 0)
+            // Last mod file date
+            appendUInt16(&cdHeader, 0)
+            // CRC-32
+            appendUInt32(&cdHeader, entry.crc32)
             // Compressed size
-            cdHeader.append(contentsOf: withUnsafeBytes(of: UInt32(compressedData.count).littleEndian) { Array($0) })
+            appendUInt32(&cdHeader, UInt32(entry.fileData.count))
             // Uncompressed size
-            cdHeader.append(contentsOf: withUnsafeBytes(of: UInt32(fileData.count).littleEndian) { Array($0) })
+            appendUInt32(&cdHeader, UInt32(entry.fileData.count))
             // File name length
-            cdHeader.append(contentsOf: withUnsafeBytes(of: UInt16(fileNameData.count).littleEndian) { Array($0) })
+            appendUInt16(&cdHeader, UInt16(fileNameData.count))
             // Extra field length
-            cdHeader.append(contentsOf: [0x00, 0x00])
-            // Comment length
-            cdHeader.append(contentsOf: [0x00, 0x00])
+            appendUInt16(&cdHeader, 0)
+            // File comment length
+            appendUInt16(&cdHeader, 0)
             // Disk number start
-            cdHeader.append(contentsOf: [0x00, 0x00])
+            appendUInt16(&cdHeader, 0)
             // Internal file attributes
-            cdHeader.append(contentsOf: [0x00, 0x00])
+            appendUInt16(&cdHeader, 0)
             // External file attributes
-            cdHeader.append(contentsOf: [0x00, 0x00, 0x00, 0x00])
+            appendUInt32(&cdHeader, 0)
             // Relative offset of local header
-            let offset = index < localFileHeaders.count ? localFileHeaders[index].offset : 0
-            cdHeader.append(contentsOf: withUnsafeBytes(of: UInt32(offset).littleEndian) { Array($0) })
+            appendUInt32(&cdHeader, UInt32(entry.localHeaderOffset))
             // File name
             cdHeader.append(fileNameData)
 
             zipData.append(cdHeader)
-            centralDirSize += cdHeader.count
         }
 
-        // Write end of central directory
+        let centralDirSize = zipData.count - centralDirStart
+
+        // Write end of central directory record
         var eocd = Data()
 
-        // Signature
+        // Signature: PK\x05\x06
         eocd.append(contentsOf: [0x50, 0x4B, 0x05, 0x06])
-        // Disk number
-        eocd.append(contentsOf: [0x00, 0x00])
-        // Disk number with CD
-        eocd.append(contentsOf: [0x00, 0x00])
-        // Number of entries on disk
-        eocd.append(contentsOf: withUnsafeBytes(of: UInt16(allFiles.count).littleEndian) { Array($0) })
-        // Total number of entries
-        eocd.append(contentsOf: withUnsafeBytes(of: UInt16(allFiles.count).littleEndian) { Array($0) })
+        // Number of this disk
+        appendUInt16(&eocd, 0)
+        // Disk where central directory starts
+        appendUInt16(&eocd, 0)
+        // Number of central directory records on this disk
+        appendUInt16(&eocd, UInt16(entries.count))
+        // Total number of central directory records
+        appendUInt16(&eocd, UInt16(entries.count))
         // Size of central directory
-        eocd.append(contentsOf: withUnsafeBytes(of: UInt32(centralDirSize).littleEndian) { Array($0) })
-        // Offset of central directory
-        eocd.append(contentsOf: withUnsafeBytes(of: UInt32(centralDirStart).littleEndian) { Array($0) })
+        appendUInt32(&eocd, UInt32(centralDirSize))
+        // Offset of start of central directory
+        appendUInt32(&eocd, UInt32(centralDirStart))
         // Comment length
-        eocd.append(contentsOf: [0x00, 0x00])
+        appendUInt16(&eocd, 0)
 
         zipData.append(eocd)
 
@@ -268,23 +277,24 @@ class ArchiveCompressor {
         password: String?,
         progress: ((Double, String) -> Void)?
     ) throws {
-        // Collect all file data
+        // For 7z, we'll create a simple tar-like concatenation and compress with LZMA
         var allData = Data()
+        var fileIndex: [(name: String, offset: Int, size: Int)] = []
 
         for (index, fileURL) in files.enumerated() {
-            progress?(Double(index) / Double(files.count) * 0.5, fileURL.lastPathComponent)
+            progress?(Double(index) / Double(files.count) * 0.4, fileURL.lastPathComponent)
 
-            guard fileURL.startAccessingSecurityScopedResource() || FileManager.default.isReadableFile(atPath: fileURL.path) else {
-                continue
-            }
-            defer { fileURL.stopAccessingSecurityScopedResource() }
+            let accessing = fileURL.startAccessingSecurityScopedResource()
+            defer { if accessing { fileURL.stopAccessingSecurityScopedResource() } }
 
             if let fileData = try? Data(contentsOf: fileURL) {
+                let name = fileURL.lastPathComponent
+                fileIndex.append((name, allData.count, fileData.count))
                 allData.append(fileData)
             }
         }
 
-        progress?(0.6, "正在压缩...")
+        progress?(0.5, "正在压缩...")
 
         // Compress using LZMA
         guard let compressedData = compressLZMA(allData) else {
@@ -293,22 +303,21 @@ class ArchiveCompressor {
 
         progress?(0.9, "正在写入文件...")
 
-        // Build simple 7z file structure
+        // Build 7z file structure
         var sevenZipData = Data()
 
-        // 7z Signature
+        // 7z Signature: 7z BC AF 27 1C
         sevenZipData.append(contentsOf: [0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C])
-        // Version
+        // Version (0.4)
         sevenZipData.append(contentsOf: [0x00, 0x04])
         // Start header CRC (placeholder)
-        sevenZipData.append(contentsOf: [0x00, 0x00, 0x00, 0x00])
+        appendUInt32(&sevenZipData, 0)
         // Next header offset
-        let nextHeaderOffset = UInt64(compressedData.count)
-        sevenZipData.append(contentsOf: withUnsafeBytes(of: nextHeaderOffset.littleEndian) { Array($0) })
+        appendUInt64(&sevenZipData, UInt64(compressedData.count))
         // Next header size (placeholder)
-        sevenZipData.append(contentsOf: withUnsafeBytes(of: UInt64(0).littleEndian) { Array($0) })
+        appendUInt64(&sevenZipData, 0)
         // Next header CRC (placeholder)
-        sevenZipData.append(contentsOf: [0x00, 0x00, 0x00, 0x00])
+        appendUInt32(&sevenZipData, 0)
 
         // Compressed data
         sevenZipData.append(compressedData)
@@ -320,30 +329,19 @@ class ArchiveCompressor {
 
     // MARK: - Helpers
 
-    private static func compressData(_ data: Data) -> (Data, UInt16) {
-        // Try to compress with deflate
-        let bufferSize = data.count
-        var compressed = Data(count: bufferSize)
+    private static func appendUInt16(_ data: inout Data, _ value: UInt16) {
+        var v = value.littleEndian
+        data.append(contentsOf: withUnsafeBytes(of: &v) { Array($0) })
+    }
 
-        let result = data.withUnsafeBytes { srcPtr -> Int in
-            compressed.withUnsafeMutableBytes { dstPtr -> Int in
-                guard let src = srcPtr.baseAddress,
-                      let dst = dstPtr.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return 0 }
-                return compression_encode_buffer(
-                    dst, bufferSize,
-                    src.assumingMemoryBound(to: UInt8.self), data.count,
-                    nil,
-                    COMPRESSION_ZLIB
-                )
-            }
-        }
+    private static func appendUInt32(_ data: inout Data, _ value: UInt32) {
+        var v = value.littleEndian
+        data.append(contentsOf: withUnsafeBytes(of: &v) { Array($0) })
+    }
 
-        if result > 0 && result < data.count {
-            compressed.count = result
-            return (compressed, 8) // Deflate
-        } else {
-            return (data, 0) // Stored
-        }
+    private static func appendUInt64(_ data: inout Data, _ value: UInt64) {
+        var v = value.littleEndian
+        data.append(contentsOf: withUnsafeBytes(of: &v) { Array($0) })
     }
 
     private static func compressLZMA(_ data: Data) -> Data? {
