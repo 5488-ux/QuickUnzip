@@ -57,7 +57,7 @@ struct TextEditorMainView: View {
         VStack(spacing: 16) {
             HStack(spacing: 16) {
                 // 新建文档
-                QuickActionButton(
+                TextEditorActionButton(
                     icon: "doc.badge.plus",
                     title: "新建文档",
                     color: Color(hex: "667eea")
@@ -66,7 +66,7 @@ struct TextEditorMainView: View {
                 }
 
                 // 打开文件
-                QuickActionButton(
+                TextEditorActionButton(
                     icon: "folder.badge.plus",
                     title: "打开文件",
                     color: Color(hex: "764ba2")
@@ -229,9 +229,9 @@ struct TextDocument: Identifiable, Codable {
     }
 }
 
-// MARK: - Quick Action Button
+// MARK: - Text Editor Action Button
 
-struct QuickActionButton: View {
+struct TextEditorActionButton: View {
     let icon: String
     let title: String
     let color: Color
