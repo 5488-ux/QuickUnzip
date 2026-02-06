@@ -7,14 +7,19 @@ on:
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+      run: |
+        # 列出可用的 Xcode 版本
+        ls /Applications | grep Xcode
+        # 使用最新的 Xcode 26 (iOS 26 SDK)
+        sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        xcodebuild -version
 
     - name: Install Certificate and Profile
       env:
