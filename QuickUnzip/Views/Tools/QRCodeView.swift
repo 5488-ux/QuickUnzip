@@ -262,7 +262,7 @@ struct QRCodeView: View {
             }
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
-            .padding(.vertical: 16)
+            .padding(.vertical, 16)
             .background(
                 LinearGradient(
                     colors: [Color(hex: "54a0ff"), Color(hex: "3742fa")],
