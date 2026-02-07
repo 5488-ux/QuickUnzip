@@ -48,7 +48,7 @@ class AIChatService: ObservableObject {
     static let shared = AIChatService()
 
     private let apiKey = "sk-8yCdmD8Z6dLqUY8lneL88BOieBGQWC0QBz9YXFivetb2i02n"
-    private let baseURL = "https://api.openai.com/v1/chat/completions"
+    private let baseURL = "https://aicanapi.com/v1/chat/completions"
     private let model = "sb"
 
     private let systemPrompt = """
