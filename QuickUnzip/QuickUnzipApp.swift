@@ -4,12 +4,14 @@ import SwiftUI
 struct QuickUnzipApp: App {
     @StateObject private var store = FileStore()
     @StateObject private var updateChecker = UpdateChecker()
+    @StateObject private var authService = AppleAuthService.shared
 
     var body: some Scene {
         WindowGroup {
             MainTabView()
                 .environmentObject(store)
                 .environmentObject(updateChecker)
+                .environmentObject(authService)
                 .sheet(isPresented: $updateChecker.showUpdateLog) {
                     UpdateLogView()
                 }

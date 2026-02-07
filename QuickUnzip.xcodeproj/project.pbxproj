@@ -50,6 +50,7 @@
 		A1000039 /* AudioPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000039 /* AudioPreviewView.swift */; };
 		A100003A /* VideoPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200003A /* VideoPreviewView.swift */; };
 		A100003B /* View+GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200003B /* View+GlassEffect.swift */; };
+		A100003C /* AppleAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200003C /* AppleAuthService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -98,6 +99,7 @@
 		A2000039 /* AudioPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPreviewView.swift; sourceTree = "<group>"; };
 		A200003A /* VideoPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPreviewView.swift; sourceTree = "<group>"; };
 		A200003B /* View+GlassEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+GlassEffect.swift"; sourceTree = "<group>"; };
+		A200003C /* AppleAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -219,6 +221,7 @@
 				A2000031 /* CompressionAnalyzer.swift */,
 				A2000032 /* EncodingFixer.swift */,
 				A2000033 /* QRCodeGenerator.swift */,
+				A200003C /* AppleAuthService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -353,6 +356,7 @@
 				A1000039 /* AudioPreviewView.swift in Sources */,
 				A100003A /* VideoPreviewView.swift in Sources */,
 				A100003B /* View+GlassEffect.swift in Sources */,
+				A100003C /* AppleAuthService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

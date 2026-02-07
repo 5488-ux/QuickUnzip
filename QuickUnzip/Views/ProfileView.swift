@@ -1,7 +1,9 @@
 import SwiftUI
+import AuthenticationServices
 
 struct ProfileView: View {
     @EnvironmentObject var store: FileStore
+    @EnvironmentObject var authService: AppleAuthService
     @StateObject private var csAPI = CustomerServiceAPI.shared
     @State private var showCustomerService = false
     @State private var showAIChat = false
@@ -67,43 +69,123 @@ struct ProfileView: View {
 
     var userCard: some View {
         VStack(spacing: 16) {
-            // 头像
-            ZStack {
-                Circle()
-                    .fill(LinearGradient(
-                        colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
-                    .frame(width: 80, height: 80)
+            if authService.isLoggedIn {
+                // 已登录：用户头像
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 80, height: 80)
 
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 36))
-                    .foregroundColor(.white)
-            }
+                    Text(String(authService.userName.prefix(1)).uppercased())
+                        .font(.system(size: 36, weight: .bold))
+                        .foregroundColor(.white)
+                }
 
-            VStack(spacing: 4) {
-                Text("免费解压王")
-                    .font(.title2.bold())
-                    .foregroundColor(.primary)
+                VStack(spacing: 4) {
+                    Text(authService.userName.isEmpty ? "用户" : authService.userName)
+                        .font(.title2.bold())
+                        .foregroundColor(.primary)
 
-                Text("v2.9.4")
-                    .font(.caption)
+                    if !authService.userEmail.isEmpty {
+                        Text(authService.userEmail)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    Text("v3.1.0")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                // VIP 标签
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundColor(Color(hex: "ffd700"))
+                    Text("永久免费 · 无广告")
+                        .font(.caption.bold())
+                        .foregroundColor(Color(hex: "ffd700"))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color(hex: "ffd700").opacity(0.15))
+                .cornerRadius(20)
+
+                // 登出按钮
+                Button(action: {
+                    authService.logout()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.caption)
+                        Text("退出登录")
+                            .font(.caption)
+                    }
                     .foregroundColor(.secondary)
-            }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.gray.opacity(0.1))
+                    .cornerRadius(20)
+                }
+            } else {
+                // 未登录：Apple 登录按钮
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(
+                            colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .frame(width: 80, height: 80)
 
-            // VIP 标签
-            HStack(spacing: 6) {
-                Image(systemName: "checkmark.seal.fill")
-                    .foregroundColor(Color(hex: "ffd700"))
-                Text("永久免费 · 无广告")
-                    .font(.caption.bold())
-                    .foregroundColor(Color(hex: "ffd700"))
+                    Image(systemName: "person.crop.circle")
+                        .font(.system(size: 36))
+                        .foregroundColor(.white)
+                }
+
+                VStack(spacing: 4) {
+                    Text("免费解压王")
+                        .font(.title2.bold())
+                        .foregroundColor(.primary)
+
+                    Text("v3.1.0")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                SignInWithAppleButton(.signIn) { request in
+                    request.requestedScopes = [.fullName, .email]
+                } onCompletion: { result in
+                    switch result {
+                    case .success(let authorization):
+                        if let credential = authorization.credential as? ASAuthorizationAppleIDCredential {
+                            handleAppleCredential(credential)
+                        }
+                    case .failure(let error):
+                        print("Apple Sign In failed: \(error)")
+                    }
+                }
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: 44)
+                .cornerRadius(22)
+                .padding(.horizontal, 40)
+
+                // VIP 标签
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .foregroundColor(Color(hex: "ffd700"))
+                    Text("永久免费 · 无广告")
+                        .font(.caption.bold())
+                        .foregroundColor(Color(hex: "ffd700"))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color(hex: "ffd700").opacity(0.15))
+                .cornerRadius(20)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color(hex: "ffd700").opacity(0.15))
-            .cornerRadius(20)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
@@ -113,6 +195,57 @@ struct ProfileView: View {
                 .shadow(color: .black.opacity(0.05), radius: 10, y: 4)
         )
         .padding(.horizontal)
+    }
+
+    private func handleAppleCredential(_ credential: ASAuthorizationAppleIDCredential) {
+        let userId = credential.user
+        let fullName = [credential.fullName?.givenName, credential.fullName?.familyName]
+            .compactMap { $0 }
+            .joined(separator: " ")
+        let email = credential.email ?? ""
+
+        let savedName = UserDefaults.standard.string(forKey: "apple_user_name") ?? ""
+        let savedEmail = UserDefaults.standard.string(forKey: "apple_user_email") ?? ""
+        let finalName = fullName.isEmpty ? savedName : fullName
+        let finalEmail = email.isEmpty ? savedEmail : email
+
+        UserDefaults.standard.set(userId, forKey: "apple_user_id")
+        if !finalName.isEmpty {
+            UserDefaults.standard.set(finalName, forKey: "apple_user_name")
+        }
+        if !finalEmail.isEmpty {
+            UserDefaults.standard.set(finalEmail, forKey: "apple_user_email")
+        }
+
+        authService.isLoggedIn = true
+        authService.userName = finalName
+        authService.userEmail = finalEmail
+
+        // Send to server
+        sendAppleLoginToServer(appleUserId: userId, name: finalName, email: finalEmail)
+    }
+
+    private func sendAppleLoginToServer(appleUserId: String, name: String, email: String) {
+        guard let url = URL(string: "https://781391.cn/admin/api.php?action=apple_login") else { return }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let deviceId = UserDefaults.standard.string(forKey: "cs_device_id") ?? UUID().uuidString
+        let body: [String: Any] = [
+            "device_id": deviceId,
+            "apple_user_id": appleUserId,
+            "name": name,
+            "email": email
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        URLSession.shared.dataTask(with: request) { _, _, error in
+            if let error = error {
+                print("Apple login server sync failed: \(error)")
+            }
+        }.resume()
     }
 
     // MARK: - Storage Card
@@ -267,7 +400,7 @@ struct ProfileView: View {
             MenuRow(
                 icon: "info.circle",
                 title: "关于我们",
-                subtitle: "免费解压王 v2.9.4",
+                subtitle: "免费解压王 v3.1.0",
                 iconColors: [Color(hex: "667eea"), Color(hex: "764ba2")]
             ) {
                 // 关于页面
