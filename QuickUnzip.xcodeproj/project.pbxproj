@@ -38,6 +38,15 @@
 		A100001D /* TextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001E /* TextEditorView.swift */; };
 		A100001E /* AIChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001F /* AIChatService.swift */; };
 		A100001F /* AIChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021 /* AIChatView.swift */; };
+		A1000030 /* ArchiveCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000030 /* ArchiveCleaner.swift */; };
+		A1000031 /* CompressionAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000031 /* CompressionAnalyzer.swift */; };
+		A1000032 /* EncodingFixer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000032 /* EncodingFixer.swift */; };
+		A1000033 /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000033 /* QRCodeGenerator.swift */; };
+		A1000034 /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000034 /* ToolsView.swift */; };
+		A1000035 /* AnalyzerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000035 /* AnalyzerView.swift */; };
+		A1000036 /* CleanerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000036 /* CleanerView.swift */; };
+		A1000037 /* EncodingFixerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000037 /* EncodingFixerView.swift */; };
+		A1000038 /* QRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000038 /* QRCodeView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -74,6 +83,15 @@
 		A200001E /* TextEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEditorView.swift; sourceTree = "<group>"; };
 		A200001F /* AIChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatService.swift; sourceTree = "<group>"; };
 		A2000021 /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
+		A2000030 /* ArchiveCleaner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveCleaner.swift; sourceTree = "<group>"; };
+		A2000031 /* CompressionAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompressionAnalyzer.swift; sourceTree = "<group>"; };
+		A2000032 /* EncodingFixer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncodingFixer.swift; sourceTree = "<group>"; };
+		A2000033 /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
+		A2000034 /* ToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolsView.swift; sourceTree = "<group>"; };
+		A2000035 /* AnalyzerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyzerView.swift; sourceTree = "<group>"; };
+		A2000036 /* CleanerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CleanerView.swift; sourceTree = "<group>"; };
+		A2000037 /* EncodingFixerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncodingFixerView.swift; sourceTree = "<group>"; };
+		A2000038 /* QRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -142,8 +160,10 @@
 				A200001D /* ProfileView.swift */,
 				A200001E /* TextEditorView.swift */,
 				A2000021 /* AIChatView.swift */,
+				A2000034 /* ToolsView.swift */,
 				C1000006 /* Preview */,
 				C1000007 /* Components */,
+				C1000011 /* Tools */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -186,8 +206,23 @@
 				A2000017 /* ArchiveCompressor.swift */,
 				A200001C /* CustomerServiceAPI.swift */,
 				A200001F /* AIChatService.swift */,
+				A2000030 /* ArchiveCleaner.swift */,
+				A2000031 /* CompressionAnalyzer.swift */,
+				A2000032 /* EncodingFixer.swift */,
+				A2000033 /* QRCodeGenerator.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		C1000011 /* Tools */ = {
+			isa = PBXGroup;
+			children = (
+				A2000035 /* AnalyzerView.swift */,
+				A2000036 /* CleanerView.swift */,
+				A2000037 /* EncodingFixerView.swift */,
+				A2000038 /* QRCodeView.swift */,
+			);
+			path = Tools;
 			sourceTree = "<group>";
 		};
 		C1000010 /* Products */ = {
@@ -297,6 +332,15 @@
 				A100001D /* TextEditorView.swift in Sources */,
 				A100001E /* AIChatService.swift in Sources */,
 				A100001F /* AIChatView.swift in Sources */,
+				A1000030 /* ArchiveCleaner.swift in Sources */,
+				A1000031 /* CompressionAnalyzer.swift in Sources */,
+				A1000032 /* EncodingFixer.swift in Sources */,
+				A1000033 /* QRCodeGenerator.swift in Sources */,
+				A1000034 /* ToolsView.swift in Sources */,
+				A1000035 /* AnalyzerView.swift in Sources */,
+				A1000036 /* CleanerView.swift in Sources */,
+				A1000037 /* EncodingFixerView.swift in Sources */,
+				A1000038 /* QRCodeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

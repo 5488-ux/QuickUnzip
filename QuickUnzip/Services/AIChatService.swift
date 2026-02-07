@@ -102,7 +102,7 @@ class AIChatService: ObservableObject {
 
     // MARK: - API Call
 
-    private func callAPI() throws async -> String {
+    private func callAPI() async throws -> String {
         var chatMessages = [ChatCompletionRequest.ChatMessage(role: "system", content: systemPrompt)]
 
         // Include recent conversation context (last 20 messages)
