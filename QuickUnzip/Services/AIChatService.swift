@@ -62,7 +62,7 @@ class AIChatService: ObservableObject {
     private let conversationsKey = "ai_conversations_v2"
 
     private var model: String {
-        thinkingEnabled ? "deepseek-reasoner" : "deepseek-chat"
+        thinkingEnabled ? "claude-haiku-4-5-20251001-thinking" : "claude-haiku-4-5-20251001"
     }
 
     init() {

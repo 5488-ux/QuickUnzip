@@ -314,12 +314,12 @@ struct ProfileView: View {
 
             // AI 助手
             MenuRow(
-                icon: "sparkles",
-                title: "DeepSeek AI",
+                icon: "brain.head.profile",
+                title: "AI 助手",
                 subtitle: "图片识别 · 深度思考 · 多轮对话",
                 badge: "AI",
-                badgeColor: Color(hex: "4f46e5"),
-                iconColors: [Color(hex: "4f46e5"), Color(hex: "7c3aed")]
+                badgeColor: Color(hex: "667eea"),
+                iconColors: [Color(hex: "667eea"), Color(hex: "764ba2")]
             ) {
                 showAIChat = true
             }

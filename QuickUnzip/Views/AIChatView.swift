@@ -52,7 +52,7 @@ struct AIChatView: View {
                 // Input area
                 chatInputArea
             }
-            .navigationTitle("DeepSeek AI")
+            .navigationTitle("AI 助手")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -102,7 +102,7 @@ struct AIChatView: View {
             Circle()
                 .fill(Color.green)
                 .frame(width: 6, height: 6)
-            Text(chatService.thinkingEnabled ? "DeepSeek R1 · 深度思考" : "DeepSeek V3")
+            Text(chatService.thinkingEnabled ? "深度思考模式" : "AI 智能助手")
                 .font(.caption2)
                 .foregroundColor(.secondary)
             Spacer()
@@ -119,19 +119,19 @@ struct AIChatView: View {
             ZStack {
                 Circle()
                     .fill(LinearGradient(
-                        colors: [Color(hex: "4f46e5"), Color(hex: "7c3aed")],
+                        colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
                     .frame(width: 80, height: 80)
-                    .shadow(color: Color(hex: "4f46e5").opacity(0.4), radius: 12, y: 6)
+                    .shadow(color: Color(hex: "667eea").opacity(0.4), radius: 12, y: 6)
 
-                Image(systemName: "sparkles")
+                Image(systemName: "brain.head.profile")
                     .font(.system(size: 36))
                     .foregroundColor(.white)
             }
 
-            Text("DeepSeek AI")
+            Text("AI 助手")
                 .font(.title2.bold())
                 .foregroundColor(.primary)
 
@@ -176,10 +176,10 @@ struct AIChatView: View {
             Text(text)
                 .font(.caption2)
         }
-        .foregroundColor(Color(hex: "4f46e5"))
+        .foregroundColor(Color(hex: "667eea"))
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
-        .background(Color(hex: "4f46e5").opacity(0.1))
+        .background(Color(hex: "667eea").opacity(0.1))
         .cornerRadius(12)
     }
 
@@ -189,13 +189,13 @@ struct AIChatView: View {
         HStack(spacing: 8) {
             Circle()
                 .fill(LinearGradient(
-                    colors: [Color(hex: "4f46e5"), Color(hex: "7c3aed")],
+                    colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ))
                 .frame(width: 36, height: 36)
                 .overlay(
-                    Image(systemName: "sparkles")
+                    Image(systemName: "brain.head.profile")
                         .font(.system(size: 16))
                         .foregroundColor(.white)
                 )
@@ -205,7 +205,7 @@ struct AIChatView: View {
                 if chatService.thinkingEnabled {
                     Text("思考中...")
                         .font(.caption)
-                        .foregroundColor(Color(hex: "4f46e5"))
+                        .foregroundColor(Color(hex: "667eea"))
                 }
                 TypingIndicator()
             }
@@ -265,7 +265,7 @@ struct AIChatView: View {
             PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
                 Image(systemName: "photo.on.rectangle")
                     .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "4f46e5"))
+                    .foregroundColor(Color(hex: "667eea"))
             }
 
             TextField("输入消息...", text: $inputText, axis: .vertical)
@@ -283,7 +283,7 @@ struct AIChatView: View {
                     .fill(
                         canSend
                         ? AnyShapeStyle(LinearGradient(
-                            colors: [Color(hex: "4f46e5"), Color(hex: "7c3aed")],
+                            colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ))
@@ -371,7 +371,7 @@ struct AIChatBubbleView: View {
                         .padding(.vertical, 10)
                         .background(
                             LinearGradient(
-                                colors: [Color(hex: "4f46e5"), Color(hex: "7c3aed")],
+                                colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -388,13 +388,13 @@ struct AIChatBubbleView: View {
                 // AI avatar
                 Circle()
                     .fill(LinearGradient(
-                        colors: [Color(hex: "4f46e5"), Color(hex: "7c3aed")],
+                        colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
                     .frame(width: 36, height: 36)
                     .overlay(
-                        Image(systemName: "sparkles")
+                        Image(systemName: "brain.head.profile")
                             .font(.system(size: 16))
                             .foregroundColor(.white)
                     )
@@ -416,10 +416,10 @@ struct AIChatBubbleView: View {
                                 Image(systemName: showThinking ? "chevron.up" : "chevron.down")
                                     .font(.caption2)
                             }
-                            .foregroundColor(Color(hex: "4f46e5"))
+                            .foregroundColor(Color(hex: "667eea"))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(Color(hex: "4f46e5").opacity(0.1))
+                            .background(Color(hex: "667eea").opacity(0.1))
                             .cornerRadius(10)
                         }
 
@@ -433,7 +433,7 @@ struct AIChatBubbleView: View {
                                 .cornerRadius(14)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Color(hex: "4f46e5").opacity(0.2), lineWidth: 1)
+                                        .stroke(Color(hex: "667eea").opacity(0.2), lineWidth: 1)
                                 )
                         }
                     }
@@ -522,7 +522,7 @@ struct ConversationListView: View {
 
                                     if conv.id == chatService.currentConversationId {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(Color(hex: "4f46e5"))
+                                            .foregroundColor(Color(hex: "667eea"))
                                     }
                                 }
                                 .padding(.vertical, 4)
@@ -548,7 +548,7 @@ struct ConversationListView: View {
                         dismiss()
                     } label: {
                         Image(systemName: "plus")
-                            .foregroundColor(Color(hex: "4f46e5"))
+                            .foregroundColor(Color(hex: "667eea"))
                     }
                 }
             }
@@ -580,10 +580,10 @@ struct AIQuickButton: View {
         Button(action: action) {
             Text(text)
                 .font(.subheadline)
-                .foregroundColor(Color(hex: "4f46e5"))
+                .foregroundColor(Color(hex: "667eea"))
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(Color(hex: "4f46e5").opacity(0.1))
+                .background(Color(hex: "667eea").opacity(0.1))
                 .cornerRadius(20)
                 .conditionalGlassEffect()
         }
@@ -599,7 +599,7 @@ struct TypingIndicator: View {
         HStack(spacing: 5) {
             ForEach(0..<3, id: \.self) { index in
                 Circle()
-                    .fill(Color(hex: "4f46e5"))
+                    .fill(Color(hex: "667eea"))
                     .frame(width: 8, height: 8)
                     .scaleEffect(dotScale(for: index))
                     .opacity(dotOpacity(for: index))
