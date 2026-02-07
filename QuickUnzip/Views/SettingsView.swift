@@ -78,14 +78,14 @@ struct SettingsView: View {
                     HStack {
                         Text("版本")
                         Spacer()
-                        Text("2.9.4")
+                        Text("3.1.0")
                             .foregroundColor(.secondary)
                     }
 
                     HStack {
                         Text("构建")
                         Spacer()
-                        Text("33")
+                        Text("34")
                             .foregroundColor(.secondary)
                     }
 

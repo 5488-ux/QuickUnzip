@@ -50,11 +50,11 @@ struct UpdateLogView: View {
                     .cornerRadius(8)
             }
 
-            Text("免费解压王 v2.9.4 正式发布！")
+            Text("免费解压王 v3.1.0 正式发布！")
                 .font(.subheadline.bold())
                 .foregroundColor(.white)
 
-            Text("本次更新新增文本编辑器功能，支持编辑各种文本文件，还可以新建和保存！")
+            Text("本次更新新增音频/视频预览功能，支持播放 MP3、MP4 等多种格式，还有 iOS 26 液态玻璃效果！")
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.9))
                 .lineSpacing(4)
@@ -79,11 +79,25 @@ struct UpdateLogView: View {
                 .font(.headline)
                 .padding(.horizontal)
 
+            // v3.1.0
+            UpdateLogCard(
+                version: "3.1.0",
+                date: "2026年2月7日",
+                isLatest: true,
+                changes: [
+                    UpdateItem(type: .new, text: "音频预览播放器（MP3/WAV/AAC/M4A）"),
+                    UpdateItem(type: .new, text: "视频预览播放器（MP4/MOV/AVI/MKV）"),
+                    UpdateItem(type: .new, text: "iOS 26 液态玻璃视觉效果"),
+                    UpdateItem(type: .improve, text: "文件预览支持更多格式"),
+                    UpdateItem(type: .improve, text: "首页卡片视觉升级")
+                ]
+            )
+
             // v2.9.4
             UpdateLogCard(
                 version: "2.9.4",
                 date: "2026年2月6日",
-                isLatest: true,
+                isLatest: false,
                 changes: [
                     UpdateItem(type: .new, text: "新增文本编辑器"),
                     UpdateItem(type: .new, text: "支持打开任意文件编辑"),

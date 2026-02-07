@@ -15,6 +15,10 @@ struct FileDetailView: View {
                 TextPreviewView(url: item.url)
             } else if item.isPDF {
                 PDFPreviewView(url: item.url)
+            } else if item.isAudio {
+                AudioPreviewView(url: item.url)
+            } else if item.isVideo {
+                VideoPreviewView(url: item.url)
             } else {
                 VStack(spacing: 16) {
                     Image(systemName: item.icon)

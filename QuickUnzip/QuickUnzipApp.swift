@@ -26,7 +26,7 @@ class UpdateChecker: ObservableObject {
     @Published var showUpdateLog = false
 
     private let lastSeenVersionKey = "lastSeenAppVersion"
-    private let currentVersion = "3.0.0"
+    private let currentVersion = "3.1.0"
 
     func checkForUpdate() {
         let lastSeenVersion = UserDefaults.standard.string(forKey: lastSeenVersionKey) ?? ""

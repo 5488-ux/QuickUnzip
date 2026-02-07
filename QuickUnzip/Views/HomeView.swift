@@ -175,6 +175,7 @@ struct HomeView: View {
                 .fill(.white)
                 .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
         )
+        .conditionalGlassEffect()
         .padding(.horizontal)
     }
 
@@ -218,6 +219,7 @@ struct HomeView: View {
                     .fill(.white)
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
             )
+            .conditionalGlassEffect()
         }
         .buttonStyle(.plain)
         .padding(.horizontal)
@@ -370,6 +372,7 @@ struct HomeView: View {
                     .fill(.white)
                     .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
             )
+            .conditionalGlassEffect()
         }
         .buttonStyle(.plain)
         .padding(.horizontal)

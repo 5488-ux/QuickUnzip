@@ -59,7 +59,9 @@ struct FileItem: Identifiable, Hashable {
     }
     var isPDF: Bool { fileExtension == "pdf" }
     var isArchive: Bool { ["zip", "rar", "7z", "tar", "gz"].contains(fileExtension) }
-    var isPreviewable: Bool { isImage || isText || isPDF }
+    var isAudio: Bool { ["mp3", "wav", "aac", "m4a"].contains(fileExtension) }
+    var isVideo: Bool { ["mp4", "mov", "avi", "mkv"].contains(fileExtension) }
+    var isPreviewable: Bool { isImage || isText || isPDF || isAudio || isVideo }
 
     var formattedSize: String {
         if isDirectory { return "文件夹" }
