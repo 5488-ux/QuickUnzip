@@ -4,6 +4,7 @@ struct ProfileView: View {
     @EnvironmentObject var store: FileStore
     @StateObject private var csAPI = CustomerServiceAPI.shared
     @State private var showCustomerService = false
+    @State private var showAIChat = false
     @State private var showSettings = false
     @State private var showUpdateLog = false
     @State private var showFeedback = false
@@ -43,6 +44,9 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showCustomerService) {
                 CustomerServiceView()
+            }
+            .sheet(isPresented: $showAIChat) {
+                AIChatView()
             }
             .sheet(isPresented: $showSettings) {
                 SettingsView()
@@ -171,6 +175,20 @@ struct ProfileView: View {
                 iconColors: [Color(hex: "667eea"), Color(hex: "764ba2")]
             ) {
                 showCustomerService = true
+            }
+
+            Divider().padding(.leading, 56)
+
+            // AI 助手
+            MenuRow(
+                icon: "brain.head.profile",
+                title: "AI 助手",
+                subtitle: "智能问答，随时帮你",
+                badge: "AI",
+                badgeColor: Color(hex: "667eea"),
+                iconColors: [Color(hex: "667eea"), Color(hex: "764ba2")]
+            ) {
+                showAIChat = true
             }
 
             Divider().padding(.leading, 56)

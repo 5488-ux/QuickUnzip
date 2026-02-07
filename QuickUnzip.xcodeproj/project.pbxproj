@@ -36,6 +36,8 @@
 		A100001B /* CustomerServiceAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001C /* CustomerServiceAPI.swift */; };
 		A100001C /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001D /* ProfileView.swift */; };
 		A100001D /* TextEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001E /* TextEditorView.swift */; };
+		A100001E /* AIChatService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200001F /* AIChatService.swift */; };
+		A100001F /* AIChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000021 /* AIChatView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +72,8 @@
 		A200001C /* CustomerServiceAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerServiceAPI.swift; sourceTree = "<group>"; };
 		A200001D /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		A200001E /* TextEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEditorView.swift; sourceTree = "<group>"; };
+		A200001F /* AIChatService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatService.swift; sourceTree = "<group>"; };
+		A2000021 /* AIChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIChatView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,6 +141,7 @@
 				A200001B /* CustomerServiceView.swift */,
 				A200001D /* ProfileView.swift */,
 				A200001E /* TextEditorView.swift */,
+				A2000021 /* AIChatView.swift */,
 				C1000006 /* Preview */,
 				C1000007 /* Components */,
 			);
@@ -180,6 +185,7 @@
 				A2000015 /* ArchiveExtractor.swift */,
 				A2000017 /* ArchiveCompressor.swift */,
 				A200001C /* CustomerServiceAPI.swift */,
+				A200001F /* AIChatService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -289,6 +295,8 @@
 				A100001B /* CustomerServiceAPI.swift in Sources */,
 				A100001C /* ProfileView.swift in Sources */,
 				A100001D /* TextEditorView.swift in Sources */,
+				A100001E /* AIChatService.swift in Sources */,
+				A100001F /* AIChatView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
