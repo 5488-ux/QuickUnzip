@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import AVKit
 
 struct AIChatView: View {
     @Environment(\.dismiss) private var dismiss
@@ -8,20 +9,30 @@ struct AIChatView: View {
     @State private var selectedImage: UIImage?
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showConversations = false
+    @State private var showNewConvPicker = false
     @FocusState private var isInputFocused: Bool
+
+    private var isSoraMode: Bool {
+        chatService.currentConversationType == .sora
+    }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 // Model indicator
                 modelIndicator
+                    .conditionalGlassEffect()
 
                 // Message list
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             if chatService.messages.isEmpty && !chatService.isLoading {
-                                welcomeSection
+                                if isSoraMode {
+                                    soraWelcomeSection
+                                } else {
+                                    welcomeSection
+                                }
                             }
 
                             ForEach(chatService.messages) { message in
@@ -44,6 +55,11 @@ struct AIChatView: View {
                 }
                 .background(Color(hex: "f5f5f5"))
 
+                // Sora duration picker
+                if isSoraMode {
+                    soraDurationPicker
+                }
+
                 // Image preview
                 if let image = selectedImage {
                     imagePreviewBar(image)
@@ -52,7 +68,7 @@ struct AIChatView: View {
                 // Input area
                 chatInputArea
             }
-            .navigationTitle("AI 助手")
+            .navigationTitle(isSoraMode ? "Sora 视频" : "AI 助手")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -60,17 +76,19 @@ struct AIChatView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 14) {
-                        // Thinking toggle
-                        Button {
-                            chatService.thinkingEnabled.toggle()
-                        } label: {
-                            Image(systemName: chatService.thinkingEnabled ? "brain.fill" : "brain")
-                                .foregroundColor(chatService.thinkingEnabled ? Color(hex: "667eea") : .secondary)
+                        if !isSoraMode {
+                            // Thinking toggle
+                            Button {
+                                chatService.thinkingEnabled.toggle()
+                            } label: {
+                                Image(systemName: chatService.thinkingEnabled ? "brain.fill" : "brain")
+                                    .foregroundColor(chatService.thinkingEnabled ? Color(hex: "667eea") : .secondary)
+                            }
                         }
 
-                        // New chat
+                        // New chat with type picker
                         Button {
-                            chatService.newConversation()
+                            showNewConvPicker = true
                         } label: {
                             Image(systemName: "square.and.pencil")
                                 .foregroundColor(Color(hex: "667eea"))
@@ -86,6 +104,15 @@ struct AIChatView: View {
                     }
                 }
             }
+            .confirmationDialog("新建对话", isPresented: $showNewConvPicker) {
+                Button("AI 对话") {
+                    chatService.newConversation(type: .chat)
+                }
+                Button("Sora 视频生成") {
+                    chatService.newConversation(type: .sora)
+                }
+                Button("取消", role: .cancel) {}
+            }
             .sheet(isPresented: $showConversations) {
                 ConversationListView(chatService: chatService)
             }
@@ -100,11 +127,17 @@ struct AIChatView: View {
     var modelIndicator: some View {
         HStack(spacing: 6) {
             Circle()
-                .fill(Color.green)
+                .fill(isSoraMode ? Color.orange : Color.green)
                 .frame(width: 6, height: 6)
-            Text(chatService.thinkingEnabled ? "深度思考模式" : "AI 智能助手")
-                .font(.caption2)
-                .foregroundColor(.secondary)
+            if isSoraMode {
+                Text("Sora-2 · 720p · \(chatService.selectedDuration)s")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            } else {
+                Text(chatService.thinkingEnabled ? "深度思考模式" : "AI 智能助手")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
             Spacer()
         }
         .padding(.horizontal, 16)
@@ -112,7 +145,7 @@ struct AIChatView: View {
         .background(Color.white.opacity(0.8))
     }
 
-    // MARK: - Welcome Section
+    // MARK: - Welcome Section (Chat)
 
     var welcomeSection: some View {
         VStack(spacing: 16) {
@@ -133,7 +166,6 @@ struct AIChatView: View {
 
             Text("AI 助手")
                 .font(.title2.bold())
-                .foregroundColor(.primary)
 
             Text("支持图片识别和深度思考模式\n试试问我任何问题！")
                 .font(.subheadline)
@@ -141,7 +173,6 @@ struct AIChatView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            // Feature tags
             HStack(spacing: 8) {
                 featureTag(icon: "photo", text: "图片识别")
                 featureTag(icon: "brain", text: "深度思考")
@@ -149,20 +180,55 @@ struct AIChatView: View {
             }
             .padding(.top, 4)
 
-            // Quick questions
             VStack(spacing: 10) {
-                AIQuickButton(text: "如何压缩文件？") {
-                    sendMessage("如何压缩文件？")
-                }
-                AIQuickButton(text: "支持哪些压缩格式？") {
-                    sendMessage("支持哪些压缩格式？")
-                }
-                AIQuickButton(text: "解压密码忘了怎么办？") {
-                    sendMessage("解压密码忘了怎么办？")
-                }
-                AIQuickButton(text: "ZIP和RAR有什么区别？") {
-                    sendMessage("ZIP和RAR有什么区别？")
-                }
+                AIQuickButton(text: "如何压缩文件？") { sendMessage("如何压缩文件？") }
+                AIQuickButton(text: "支持哪些压缩格式？") { sendMessage("支持哪些压缩格式？") }
+                AIQuickButton(text: "解压密码忘了怎么办？") { sendMessage("解压密码忘了怎么办？") }
+            }
+            .padding(.top, 10)
+        }
+        .padding(.vertical, 40)
+    }
+
+    // MARK: - Welcome Section (Sora)
+
+    var soraWelcomeSection: some View {
+        VStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(LinearGradient(
+                        colors: [Color(hex: "f093fb"), Color(hex: "f5576c")],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    .frame(width: 80, height: 80)
+                    .shadow(color: Color(hex: "f5576c").opacity(0.4), radius: 12, y: 6)
+
+                Image(systemName: "film")
+                    .font(.system(size: 36))
+                    .foregroundColor(.white)
+            }
+
+            Text("Sora 视频生成")
+                .font(.title2.bold())
+
+            Text("输入描述，AI 为你生成视频\n支持 4s / 8s / 12s · 720p")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            HStack(spacing: 8) {
+                featureTag(icon: "film", text: "Sora-2")
+                featureTag(icon: "timer", text: "4s/8s/12s")
+                featureTag(icon: "sparkles", text: "720p")
+            }
+            .padding(.top, 4)
+
+            VStack(spacing: 10) {
+                AIQuickButton(text: "一只猫在弹钢琴") { sendVideoPrompt("一只猫在弹钢琴") }
+                AIQuickButton(text: "海边日落延时摄影") { sendVideoPrompt("海边日落延时摄影") }
+                AIQuickButton(text: "赛博朋克城市夜景航拍") { sendVideoPrompt("赛博朋克城市夜景航拍") }
             }
             .padding(.top, 10)
         }
@@ -181,6 +247,40 @@ struct AIChatView: View {
         .padding(.vertical, 5)
         .background(Color(hex: "667eea").opacity(0.1))
         .cornerRadius(12)
+        .conditionalGlassEffect()
+    }
+
+    // MARK: - Sora Duration Picker
+
+    var soraDurationPicker: some View {
+        HStack(spacing: 0) {
+            ForEach([4, 8, 12], id: \.self) { duration in
+                Button {
+                    chatService.selectedDuration = duration
+                } label: {
+                    Text("\(duration)s")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(chatService.selectedDuration == duration ? .white : Color(hex: "667eea"))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            chatService.selectedDuration == duration
+                            ? AnyShapeStyle(LinearGradient(
+                                colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+                                startPoint: .leading, endPoint: .trailing
+                              ))
+                            : AnyShapeStyle(Color.clear)
+                        )
+                        .cornerRadius(16)
+                }
+            }
+        }
+        .padding(4)
+        .background(Color(hex: "667eea").opacity(0.1))
+        .cornerRadius(20)
+        .conditionalGlassEffect()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Loading Bubble
@@ -189,20 +289,26 @@ struct AIChatView: View {
         HStack(spacing: 8) {
             Circle()
                 .fill(LinearGradient(
-                    colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+                    colors: isSoraMode
+                        ? [Color(hex: "f093fb"), Color(hex: "f5576c")]
+                        : [Color(hex: "667eea"), Color(hex: "764ba2")],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 ))
                 .frame(width: 36, height: 36)
                 .overlay(
-                    Image(systemName: "brain.head.profile")
+                    Image(systemName: isSoraMode ? "film" : "brain.head.profile")
                         .font(.system(size: 16))
                         .foregroundColor(.white)
                 )
                 .padding(.leading, 12)
 
             VStack(alignment: .leading, spacing: 4) {
-                if chatService.thinkingEnabled {
+                if isSoraMode {
+                    Text("视频生成中，请耐心等待...")
+                        .font(.caption)
+                        .foregroundColor(Color(hex: "f5576c"))
+                } else if chatService.thinkingEnabled {
                     Text("思考中...")
                         .font(.caption)
                         .foregroundColor(Color(hex: "667eea"))
@@ -254,6 +360,7 @@ struct AIChatView: View {
         }
         .padding(10)
         .background(Color.white)
+        .conditionalGlassEffect()
         .shadow(color: .black.opacity(0.05), radius: 4, y: -2)
     }
 
@@ -261,14 +368,15 @@ struct AIChatView: View {
 
     var chatInputArea: some View {
         HStack(spacing: 8) {
-            // Photo picker
-            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                Image(systemName: "photo.on.rectangle")
-                    .font(.system(size: 20))
-                    .foregroundColor(Color(hex: "667eea"))
+            if !isSoraMode {
+                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                    Image(systemName: "photo.on.rectangle")
+                        .font(.system(size: 20))
+                        .foregroundColor(Color(hex: "667eea"))
+                }
             }
 
-            TextField("输入消息...", text: $inputText, axis: .vertical)
+            TextField(isSoraMode ? "描述你想生成的视频..." : "输入消息...", text: $inputText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
@@ -277,13 +385,20 @@ struct AIChatView: View {
                 .lineLimit(1...4)
                 .focused($isInputFocused)
 
-            // Send button
-            Button(action: { sendMessage(inputText) }) {
+            Button(action: {
+                if isSoraMode {
+                    sendVideoPrompt(inputText)
+                } else {
+                    sendMessage(inputText)
+                }
+            }) {
                 Circle()
                     .fill(
                         canSend
                         ? AnyShapeStyle(LinearGradient(
-                            colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+                            colors: isSoraMode
+                                ? [Color(hex: "f093fb"), Color(hex: "f5576c")]
+                                : [Color(hex: "667eea"), Color(hex: "764ba2")],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ))
@@ -291,7 +406,7 @@ struct AIChatView: View {
                     )
                     .frame(width: 36, height: 36)
                     .overlay(
-                        Image(systemName: "arrow.up")
+                        Image(systemName: isSoraMode ? "film" : "arrow.up")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
                     )
@@ -301,6 +416,7 @@ struct AIChatView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color.white)
+        .conditionalGlassEffect()
         .shadow(color: .black.opacity(0.05), radius: 10, y: -5)
     }
 
@@ -314,23 +430,24 @@ struct AIChatView: View {
         let content = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let imageData: Data? = selectedImage.flatMap { AIChatService.compressImage($0) }
         guard !content.isEmpty || imageData != nil else { return }
-
         inputText = ""
         selectedImage = nil
         selectedPhotoItem = nil
+        Task { await chatService.sendMessage(content, imageData: imageData) }
+    }
 
-        Task {
-            await chatService.sendMessage(content, imageData: imageData)
-        }
+    private func sendVideoPrompt(_ text: String) {
+        let content = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return }
+        inputText = ""
+        Task { await chatService.generateVideo(prompt: content) }
     }
 
     private func loadImage(from item: PhotosPickerItem?) {
         guard let item else { return }
         item.loadTransferable(type: Data.self) { result in
             if case .success(let data) = result, let data, let image = UIImage(data: data) {
-                DispatchQueue.main.async {
-                    selectedImage = image
-                }
+                DispatchQueue.main.async { selectedImage = image }
             }
         }
     }
@@ -355,7 +472,6 @@ struct AIChatBubbleView: View {
             if message.isFromUser {
                 Spacer(minLength: 60)
                 VStack(alignment: .trailing, spacing: 4) {
-                    // User image attachment
                     if let imageData = message.imageData, let uiImage = UIImage(data: imageData) {
                         Image(uiImage: uiImage)
                             .resizable()
@@ -388,25 +504,25 @@ struct AIChatBubbleView: View {
                 // AI avatar
                 Circle()
                     .fill(LinearGradient(
-                        colors: [Color(hex: "667eea"), Color(hex: "764ba2")],
+                        colors: message.videoURL != nil
+                            ? [Color(hex: "f093fb"), Color(hex: "f5576c")]
+                            : [Color(hex: "667eea"), Color(hex: "764ba2")],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ))
                     .frame(width: 36, height: 36)
                     .overlay(
-                        Image(systemName: "brain.head.profile")
+                        Image(systemName: message.videoURL != nil ? "film" : "brain.head.profile")
                             .font(.system(size: 16))
                             .foregroundColor(.white)
                     )
                     .padding(.leading, 12)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    // Thinking content (collapsible)
+                VStack(alignment: .leading, spacing: 6) {
+                    // Thinking content
                     if let thinking = message.thinkingContent, !thinking.isEmpty {
                         Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showThinking.toggle()
-                            }
+                            withAnimation(.easeInOut(duration: 0.2)) { showThinking.toggle() }
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "brain")
@@ -421,6 +537,7 @@ struct AIChatBubbleView: View {
                             .padding(.vertical, 6)
                             .background(Color(hex: "667eea").opacity(0.1))
                             .cornerRadius(10)
+                            .conditionalGlassEffect()
                         }
 
                         if showThinking {
@@ -431,10 +548,38 @@ struct AIChatBubbleView: View {
                                 .padding(.vertical, 10)
                                 .background(Color(hex: "f8f5ff"))
                                 .cornerRadius(14)
+                                .conditionalGlassEffect()
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 14)
                                         .stroke(Color(hex: "667eea").opacity(0.2), lineWidth: 1)
                                 )
+                        }
+                    }
+
+                    // Video player
+                    if let videoURLString = message.videoURL, let url = URL(string: videoURLString) {
+                        VideoPlayer(player: AVPlayer(url: url))
+                            .frame(width: 240, height: 135)
+                            .cornerRadius(14)
+                            .conditionalGlassEffect()
+                            .shadow(color: .black.opacity(0.08), radius: 6, y: 3)
+
+                        // Copy URL button
+                        Button {
+                            UIPasteboard.general.string = videoURLString
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "doc.on.doc")
+                                    .font(.caption2)
+                                Text("复制视频链接")
+                                    .font(.caption2)
+                            }
+                            .foregroundColor(Color(hex: "667eea"))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Color(hex: "667eea").opacity(0.1))
+                            .cornerRadius(10)
+                            .conditionalGlassEffect()
                         }
                     }
 
@@ -462,22 +607,12 @@ struct AIChatBubbleView: View {
     }
 
     func formatTime(_ date: Date) -> String {
-        let now = Date()
-        let diff = now.timeIntervalSince(date)
-
-        if diff < 60 {
-            return "刚刚"
-        } else if diff < 3600 {
-            return "\(Int(diff / 60))分钟前"
-        } else if Calendar.current.isDateInToday(date) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            return formatter.string(from: date)
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MM/dd HH:mm"
-            return formatter.string(from: date)
-        }
+        let diff = Date().timeIntervalSince(date)
+        if diff < 60 { return "刚刚" }
+        if diff < 3600 { return "\(Int(diff / 60))分钟前" }
+        let fmt = DateFormatter()
+        fmt.dateFormat = Calendar.current.isDateInToday(date) ? "HH:mm" : "MM/dd HH:mm"
+        return fmt.string(from: date)
     }
 }
 
@@ -486,6 +621,7 @@ struct AIChatBubbleView: View {
 struct ConversationListView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var chatService: AIChatService
+    @State private var showNewConvPicker = false
 
     var body: some View {
         NavigationStack {
@@ -506,16 +642,43 @@ struct ConversationListView: View {
                                 chatService.switchToConversation(conv.id)
                                 dismiss()
                             } label: {
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 12) {
+                                    // Type icon
+                                    ZStack {
+                                        Circle()
+                                            .fill(LinearGradient(
+                                                colors: conv.type == .sora
+                                                    ? [Color(hex: "f093fb"), Color(hex: "f5576c")]
+                                                    : [Color(hex: "667eea"), Color(hex: "764ba2")],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            ))
+                                            .frame(width: 32, height: 32)
+
+                                        Image(systemName: conv.type == .sora ? "film" : "brain.head.profile")
+                                            .font(.system(size: 14))
+                                            .foregroundColor(.white)
+                                    }
+
+                                    VStack(alignment: .leading, spacing: 3) {
                                         Text(conv.title)
                                             .font(.subheadline.weight(.medium))
                                             .foregroundColor(.primary)
                                             .lineLimit(1)
 
-                                        Text(formatDate(conv.updatedAt))
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
+                                        HStack(spacing: 4) {
+                                            Text(conv.type == .sora ? "Sora" : "AI")
+                                                .font(.caption2.bold())
+                                                .foregroundColor(.white)
+                                                .padding(.horizontal, 5)
+                                                .padding(.vertical, 1)
+                                                .background(conv.type == .sora ? Color(hex: "f5576c") : Color(hex: "667eea"))
+                                                .cornerRadius(4)
+
+                                            Text(formatDate(conv.updatedAt))
+                                                .font(.caption)
+                                                .foregroundColor(.secondary)
+                                        }
                                     }
 
                                     Spacer()
@@ -525,7 +688,7 @@ struct ConversationListView: View {
                                             .foregroundColor(Color(hex: "667eea"))
                                     }
                                 }
-                                .padding(.vertical, 4)
+                                .padding(.vertical, 2)
                             }
                         }
                         .onDelete { indexSet in
@@ -544,28 +707,38 @@ struct ConversationListView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        chatService.newConversation()
-                        dismiss()
+                        showNewConvPicker = true
                     } label: {
                         Image(systemName: "plus")
                             .foregroundColor(Color(hex: "667eea"))
                     }
                 }
             }
+            .confirmationDialog("新建对话", isPresented: $showNewConvPicker) {
+                Button("AI 对话") {
+                    chatService.newConversation(type: .chat)
+                    dismiss()
+                }
+                Button("Sora 视频生成") {
+                    chatService.newConversation(type: .sora)
+                    dismiss()
+                }
+                Button("取消", role: .cancel) {}
+            }
         }
     }
 
     private func formatDate(_ date: Date) -> String {
         if Calendar.current.isDateInToday(date) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            return "今天 " + formatter.string(from: date)
+            let fmt = DateFormatter()
+            fmt.dateFormat = "HH:mm"
+            return "今天 " + fmt.string(from: date)
         } else if Calendar.current.isDateInYesterday(date) {
             return "昨天"
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MM/dd"
-            return formatter.string(from: date)
+            let fmt = DateFormatter()
+            fmt.dateFormat = "MM/dd"
+            return fmt.string(from: date)
         }
     }
 }

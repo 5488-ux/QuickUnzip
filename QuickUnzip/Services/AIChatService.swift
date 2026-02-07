@@ -3,22 +3,29 @@ import UIKit
 
 // MARK: - Models
 
+enum ConversationType: String, Codable {
+    case chat
+    case sora
+}
+
 struct AIChatMessage: Identifiable, Equatable {
     let id: UUID
     let role: String
     let content: String
     let imageData: Data?
     let thinkingContent: String?
+    let videoURL: String?
     let createdAt: Date
 
     var isFromUser: Bool { role == "user" }
 
-    init(role: String, content: String, imageData: Data? = nil, thinkingContent: String? = nil, createdAt: Date = Date()) {
+    init(role: String, content: String, imageData: Data? = nil, thinkingContent: String? = nil, videoURL: String? = nil, createdAt: Date = Date()) {
         self.id = UUID()
         self.role = role
         self.content = content
         self.imageData = imageData
         self.thinkingContent = thinkingContent
+        self.videoURL = videoURL
         self.createdAt = createdAt
     }
 
@@ -30,12 +37,14 @@ struct AIChatMessage: Identifiable, Equatable {
 struct ChatConversation: Identifiable, Codable {
     let id: UUID
     var title: String
+    var type: ConversationType
     let createdAt: Date
     var updatedAt: Date
 
-    init(title: String = "新对话") {
+    init(title: String = "新对话", type: ConversationType = .chat) {
         self.id = UUID()
         self.title = title
+        self.type = type
         self.createdAt = Date()
         self.updatedAt = Date()
     }
@@ -47,7 +56,8 @@ class AIChatService: ObservableObject {
     static let shared = AIChatService()
 
     private let apiKey = "sk-8yCdmD8Z6dLqUY8lneL88BOieBGQWC0QBz9YXFivetb2i02n"
-    private let baseURL = "https://aicanapi.com/v1/chat/completions"
+    private let chatURL = "https://aicanapi.com/v1/chat/completions"
+    private let videoURL = "https://aicanapi.com/v1/video/generations"
 
     private let systemPrompt = """
     你是「免费解压王」App 内置的 AI 助手。你可以回答用户关于文件压缩、解压缩、文件管理等方面的问题，也可以进行日常聊天。请用简洁友好的中文回复。
@@ -58,8 +68,13 @@ class AIChatService: ObservableObject {
     @Published var thinkingEnabled = false
     @Published var conversations: [ChatConversation] = []
     @Published var currentConversationId: UUID?
+    @Published var selectedDuration: Int = 4
 
-    private let conversationsKey = "ai_conversations_v2"
+    private let conversationsKey = "ai_conversations_v3"
+
+    var currentConversationType: ConversationType {
+        conversations.first(where: { $0.id == currentConversationId })?.type ?? .chat
+    }
 
     private var model: String {
         thinkingEnabled ? "claude-haiku-4-5-20251001-thinking" : "claude-haiku-4-5-20251001"
@@ -75,12 +90,13 @@ class AIChatService: ObservableObject {
 
     // MARK: - Conversation Management
 
-    func newConversation() {
+    func newConversation(type: ConversationType = .chat) {
         if let currentId = currentConversationId {
             saveMessages(for: currentId)
         }
 
-        let conv = ChatConversation()
+        let title = type == .sora ? "Sora 视频" : "新对话"
+        let conv = ChatConversation(title: title, type: type)
         conversations.insert(conv, at: 0)
         saveConversations()
 
@@ -115,11 +131,11 @@ class AIChatService: ObservableObject {
         }
     }
 
-    // MARK: - Send Message
+    // MARK: - Send Chat Message
 
     func sendMessage(_ content: String, imageData: Data? = nil) async {
         if currentConversationId == nil {
-            await MainActor.run { newConversation() }
+            await MainActor.run { newConversation(type: .chat) }
         }
 
         let finalContent = content.isEmpty && imageData != nil ? "请描述这张图片" : content
@@ -130,44 +146,62 @@ class AIChatService: ObservableObject {
             isLoading = true
         }
 
-        // Update conversation title from first user message
-        if let convId = currentConversationId,
-           messages.filter({ $0.isFromUser }).count == 1,
-           let idx = conversations.firstIndex(where: { $0.id == convId }) {
-            let title = String(finalContent.prefix(20)) + (finalContent.count > 20 ? "..." : "")
-            await MainActor.run {
-                conversations[idx].title = title
-                conversations[idx].updatedAt = Date()
-                saveConversations()
-            }
-        }
+        updateConversationTitle(finalContent)
 
         do {
-            let (reply, thinking) = try await callAPI()
+            let (reply, thinking) = try await callChatAPI()
             let assistantMessage = AIChatMessage(role: "assistant", content: reply, thinkingContent: thinking)
 
             await MainActor.run {
                 messages.append(assistantMessage)
                 isLoading = false
-                if let id = currentConversationId {
-                    saveMessages(for: id)
-                }
+                if let id = currentConversationId { saveMessages(for: id) }
             }
         } catch {
-            let errorMessage = AIChatMessage(
-                role: "assistant",
-                content: "抱歉，请求失败：\(error.localizedDescription)"
-            )
             await MainActor.run {
-                messages.append(errorMessage)
+                messages.append(AIChatMessage(role: "assistant", content: "抱歉，请求失败：\(error.localizedDescription)"))
                 isLoading = false
             }
         }
     }
 
-    // MARK: - API Call
+    // MARK: - Generate Video
 
-    private func callAPI() async throws -> (String, String?) {
+    func generateVideo(prompt: String) async {
+        if currentConversationId == nil {
+            await MainActor.run { newConversation(type: .sora) }
+        }
+
+        let durationText = "\(selectedDuration)s"
+        let userMessage = AIChatMessage(role: "user", content: "🎬 \(prompt)\n⏱ \(durationText) · 720p")
+
+        await MainActor.run {
+            messages.append(userMessage)
+            isLoading = true
+        }
+
+        updateConversationTitle(prompt)
+
+        do {
+            let url = try await callVideoAPI(prompt: prompt, duration: selectedDuration)
+            let assistantMessage = AIChatMessage(role: "assistant", content: "视频生成完成！", videoURL: url)
+
+            await MainActor.run {
+                messages.append(assistantMessage)
+                isLoading = false
+                if let id = currentConversationId { saveMessages(for: id) }
+            }
+        } catch {
+            await MainActor.run {
+                messages.append(AIChatMessage(role: "assistant", content: "视频生成失败：\(error.localizedDescription)"))
+                isLoading = false
+            }
+        }
+    }
+
+    // MARK: - Chat API
+
+    private func callChatAPI() async throws -> (String, String?) {
         var chatMessages: [[String: Any]] = [
             ["role": "system", "content": systemPrompt]
         ]
@@ -192,7 +226,7 @@ class AIChatService: ObservableObject {
             "stream": false
         ]
 
-        var request = URLRequest(url: URL(string: baseURL)!)
+        var request = URLRequest(url: URL(string: chatURL)!)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -201,45 +235,90 @@ class AIChatService: ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw NSError(domain: "AIChatService", code: -1, userInfo: [NSLocalizedDescriptionKey: "无效的响应"])
-        }
-
-        guard httpResponse.statusCode == 200 else {
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let body = String(data: data, encoding: .utf8) ?? "未知错误"
-            throw NSError(domain: "AIChatService", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "HTTP \(httpResponse.statusCode): \(body)"])
+            throw NSError(domain: "AI", code: -1, userInfo: [NSLocalizedDescriptionKey: body])
         }
 
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw NSError(domain: "AIChatService", code: -2, userInfo: [NSLocalizedDescriptionKey: "解析响应失败"])
+            throw NSError(domain: "AI", code: -2, userInfo: [NSLocalizedDescriptionKey: "解析响应失败"])
         }
 
         if let error = json["error"] as? [String: Any], let message = error["message"] as? String {
-            throw NSError(domain: "AIChatService", code: -3, userInfo: [NSLocalizedDescriptionKey: message])
+            throw NSError(domain: "AI", code: -3, userInfo: [NSLocalizedDescriptionKey: message])
         }
 
         guard let choices = json["choices"] as? [[String: Any]],
               let firstChoice = choices.first,
               let message = firstChoice["message"] as? [String: Any],
               let content = message["content"] as? String else {
-            throw NSError(domain: "AIChatService", code: -4, userInfo: [NSLocalizedDescriptionKey: "没有返回内容"])
+            throw NSError(domain: "AI", code: -4, userInfo: [NSLocalizedDescriptionKey: "没有返回内容"])
         }
 
-        let reasoningContent = message["reasoning_content"] as? String
-
-        return (content, reasoningContent)
+        return (content, message["reasoning_content"] as? String)
     }
 
-    // MARK: - Clear
+    // MARK: - Video API
+
+    private func callVideoAPI(prompt: String, duration: Int) async throws -> String {
+        let requestBody: [String: Any] = [
+            "model": "sora-2",
+            "prompt": prompt,
+            "size": "1280x720",
+            "duration": duration,
+            "n": 1
+        ]
+
+        var request = URLRequest(url: URL(string: videoURL)!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = 300
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "未知错误"
+            throw NSError(domain: "Sora", code: -1, userInfo: [NSLocalizedDescriptionKey: body])
+        }
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw NSError(domain: "Sora", code: -2, userInfo: [NSLocalizedDescriptionKey: "解析响应失败"])
+        }
+
+        if let error = json["error"] as? [String: Any], let message = error["message"] as? String {
+            throw NSError(domain: "Sora", code: -3, userInfo: [NSLocalizedDescriptionKey: message])
+        }
+
+        if let dataArr = json["data"] as? [[String: Any]], let first = dataArr.first, let url = first["url"] as? String {
+            return url
+        }
+
+        throw NSError(domain: "Sora", code: -4, userInfo: [NSLocalizedDescriptionKey: "未返回视频地址"])
+    }
+
+    // MARK: - Helpers
+
+    private func updateConversationTitle(_ content: String) {
+        guard let convId = currentConversationId,
+              messages.filter({ $0.isFromUser }).count == 1,
+              let idx = conversations.firstIndex(where: { $0.id == convId }) else { return }
+
+        let prefix = conversations[idx].type == .sora ? "🎬 " : ""
+        let title = prefix + String(content.prefix(18)) + (content.count > 18 ? "..." : "")
+
+        Task { @MainActor in
+            conversations[idx].title = title
+            conversations[idx].updatedAt = Date()
+            saveConversations()
+        }
+    }
 
     func clearHistory() {
         messages.removeAll()
-        if let id = currentConversationId {
-            saveMessages(for: id)
-        }
+        if let id = currentConversationId { saveMessages(for: id) }
     }
-
-    // MARK: - Image Helper
 
     static func compressImage(_ image: UIImage, maxSize: CGFloat = 1024) -> Data? {
         let size = image.size
@@ -264,9 +343,7 @@ class AIChatService: ObservableObject {
 
     private func loadConversations() {
         guard let data = UserDefaults.standard.data(forKey: conversationsKey),
-              let convs = try? JSONDecoder().decode([ChatConversation].self, from: data) else {
-            return
-        }
+              let convs = try? JSONDecoder().decode([ChatConversation].self, from: data) else { return }
         conversations = convs
     }
 
@@ -278,12 +355,9 @@ class AIChatService: ObservableObject {
                 "content": msg.content,
                 "createdAt": msg.createdAt.timeIntervalSince1970
             ]
-            if let imgData = msg.imageData {
-                dict["imageData"] = imgData.base64EncodedString()
-            }
-            if let thinking = msg.thinkingContent {
-                dict["thinkingContent"] = thinking
-            }
+            if let imgData = msg.imageData { dict["imageData"] = imgData.base64EncodedString() }
+            if let thinking = msg.thinkingContent { dict["thinkingContent"] = thinking }
+            if let video = msg.videoURL { dict["videoURL"] = video }
             return dict
         }
         if let data = try? JSONSerialization.data(withJSONObject: items) {
@@ -300,19 +374,15 @@ class AIChatService: ObservableObject {
         }
 
         messages = items.compactMap { dict in
-            guard let role = dict["role"] as? String,
-                  let content = dict["content"] as? String else { return nil }
-
-            let timestamp = dict["createdAt"] as? TimeInterval ?? Date().timeIntervalSince1970
-            let imageData = (dict["imageData"] as? String).flatMap { Data(base64Encoded: $0) }
-            let thinkingContent = dict["thinkingContent"] as? String
-
+            guard let role = dict["role"] as? String, let content = dict["content"] as? String else { return nil }
+            let ts = dict["createdAt"] as? TimeInterval ?? Date().timeIntervalSince1970
             return AIChatMessage(
                 role: role,
                 content: content,
-                imageData: imageData,
-                thinkingContent: thinkingContent,
-                createdAt: Date(timeIntervalSince1970: timestamp)
+                imageData: (dict["imageData"] as? String).flatMap { Data(base64Encoded: $0) },
+                thinkingContent: dict["thinkingContent"] as? String,
+                videoURL: dict["videoURL"] as? String,
+                createdAt: Date(timeIntervalSince1970: ts)
             )
         }
     }
