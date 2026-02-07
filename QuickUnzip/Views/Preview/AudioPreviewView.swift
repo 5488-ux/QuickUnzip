@@ -119,6 +119,10 @@ class AudioPlayerManager: ObservableObject {
 
     func load(url: URL) {
         do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default)
+            try session.setActive(true)
+
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.prepareToPlay()
             durationString = formatTime(audioPlayer?.duration ?? 0)
@@ -161,7 +165,9 @@ class AudioPlayerManager: ObservableObject {
 
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            self?.updateProgress()
+            DispatchQueue.main.async {
+                self?.updateProgress()
+            }
         }
     }
 
