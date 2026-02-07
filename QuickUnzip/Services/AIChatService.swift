@@ -49,7 +49,7 @@ class AIChatService: ObservableObject {
 
     private let apiKey = "sk-8yCdmD8Z6dLqUY8lneL88BOieBGQWC0QBz9YXFivetb2i02n"
     private let baseURL = "https://aicanapi.com/v1/chat/completions"
-    private let model = "claude-opus-4-5-20251101-thinking"
+    private let model = "claude-haiku-4-5-20251001-thinking"
 
     private let systemPrompt = """
     你是「免费解压王」App 内置的 AI 助手。你可以回答用户关于文件压缩、解压缩、文件管理等方面的问题，也可以进行日常聊天。请用简洁友好的中文回复。
