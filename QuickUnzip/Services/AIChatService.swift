@@ -47,9 +47,9 @@ struct ChatCompletionResponse: Codable {
 class AIChatService: ObservableObject {
     static let shared = AIChatService()
 
-    private let apiKey = "sk-opu8VZrgLuIv4qrldmmmmyQXXwQdtWl8NvYj3PHhMdGz8Lqh"
+    private let apiKey = "sk-8yCdmD8Z6dLqUY8lneL88BOieBGQWC0QBz9YXFivetb2i02n"
     private let baseURL = "https://api.openai.com/v1/chat/completions"
-    private let model = "gpt-4o-mini"
+    private let model = "sb"
 
     private let systemPrompt = """
     你是「免费解压王」App 内置的 AI 助手。你可以回答用户关于文件压缩、解压缩、文件管理等方面的问题，也可以进行日常聊天。请用简洁友好的中文回复。
