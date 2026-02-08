@@ -55,7 +55,7 @@ struct ChatConversation: Identifiable, Codable {
 class AIChatService: ObservableObject {
     static let shared = AIChatService()
 
-    private let apiKey = "sk-8yCdmD8Z6dLqUY8lneL88BOieBGQWC0QBz9YXFivetb2i02n"
+    private let apiKey = "sk-aDNuLw9dfI77QFy3pTT8Hehtkg26VnaydPC9Rpvpm6a29UF1"
     private let chatURL = "https://aicanapi.com/v1/chat/completions"
     private let videoURL = "https://aicanapi.com/v1/video/generations"
 
@@ -262,7 +262,7 @@ class AIChatService: ObservableObject {
 
     private func callVideoAPI(prompt: String, duration: Int) async throws -> String {
         let requestBody: [String: Any] = [
-            "model": "sora-2",
+            "model": "sora-2-all",
             "prompt": prompt,
             "size": "1280x720",
             "duration": duration,
