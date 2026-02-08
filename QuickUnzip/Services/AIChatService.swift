@@ -262,7 +262,7 @@ class AIChatService: ObservableObject {
 
     private func callVideoAPI(prompt: String, duration: Int) async throws -> String {
         let requestBody: [String: Any] = [
-            "model": "sora-2-all",
+            "model": "grok-video-3",
             "prompt": prompt,
             "size": "1280x720",
             "duration": duration,
