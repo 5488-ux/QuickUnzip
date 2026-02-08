@@ -76,6 +76,14 @@
             </array>
         </dict>
     </array>
+    <key>NSFaceIDUsageDescription</key>
+    <string>使用 Face ID 解锁隐私保险箱</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>选择图片用于隐写术或保存到保险箱</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>保存隐写图片到相册</string>
+    <key>NSCameraUsageDescription</key>
+    <string>使用手电筒发送摩斯密码信号</string>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>

@@ -3,7 +3,7 @@ import PhotosUI
 
 struct PrivacyVaultView: View {
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var vault = PrivacyVaultService.shared
+    @ObservedObject private var vault = PrivacyVaultService.shared
     @State private var showImagePicker = false
     @State private var showDocumentPicker = false
     @State private var selectedPhotoItem: PhotosPickerItem?

@@ -188,7 +188,7 @@ class PrivacyVaultService: ObservableObject {
         switch context.biometryType {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
-        case .opticID: return "Optic ID"
+        case .none: return "密码"
         @unknown default: return "生物识别"
         }
     }

@@ -115,20 +115,30 @@ class MorseCodeService {
         let letterGap: UInt64 = 300_000_000
         let wordGap: UInt64 = 700_000_000
 
-        let generator = await UIImpactFeedbackGenerator(style: .heavy)
-
         for char in morse {
             guard isFlashing else { break }
             switch char {
             case ".":
-                await generator.impactOccurred()
+                await MainActor.run {
+                    let g = UIImpactFeedbackGenerator(style: .heavy)
+                    g.impactOccurred()
+                }
                 try? await Task.sleep(nanoseconds: dotDuration)
             case "-":
-                await generator.impactOccurred()
+                await MainActor.run {
+                    let g = UIImpactFeedbackGenerator(style: .heavy)
+                    g.impactOccurred()
+                }
                 try? await Task.sleep(nanoseconds: dashDuration / 3)
-                await generator.impactOccurred()
+                await MainActor.run {
+                    let g = UIImpactFeedbackGenerator(style: .heavy)
+                    g.impactOccurred()
+                }
                 try? await Task.sleep(nanoseconds: dashDuration / 3)
-                await generator.impactOccurred()
+                await MainActor.run {
+                    let g = UIImpactFeedbackGenerator(style: .heavy)
+                    g.impactOccurred()
+                }
                 try? await Task.sleep(nanoseconds: gapDuration)
             case "/":
                 try? await Task.sleep(nanoseconds: wordGap)
