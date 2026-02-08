@@ -1,0 +1,110 @@
+name: Build QuickUnzip IPA
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Select Xcode
+      run: |
+        # 列出可用的 Xcode 版本
+        ls /Applications | grep Xcode
+        # 使用最新的 Xcode 26 (iOS 26 SDK)
+        sudo xcode-select -s /Applications/Xcode_26.app/Contents/Developer || sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        xcodebuild -version
+
+    - name: Install Certificate and Profile
+      env:
+        CERT_PEM_BASE64: ${{ secrets.CERT_PEM_BASE64 }}
+        KEY_PEM_BASE64: ${{ secrets.KEY_PEM_BASE64 }}
+        PROFILE_BASE64: ${{ secrets.PROFILE_BASE64 }}
+      run: |
+        CERT_DIR=$RUNNER_TEMP/certs
+        mkdir -p "$CERT_DIR"
+
+        # Decode PEM cert and key
+        echo "$CERT_PEM_BASE64" | base64 --decode > "$CERT_DIR/cert.pem"
+        echo "$KEY_PEM_BASE64" | base64 --decode > "$CERT_DIR/key.pem"
+
+        # Create keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+        security create-keychain -p "" "$KEYCHAIN_PATH"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+        security unlock-keychain -p "" "$KEYCHAIN_PATH"
+
+        # Import certificate and key into keychain
+        security import "$CERT_DIR/cert.pem" -k "$KEYCHAIN_PATH" -A
+        security import "$CERT_DIR/key.pem" -k "$KEYCHAIN_PATH" -A
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" "$KEYCHAIN_PATH"
+        security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+        # Install provisioning profile
+        echo "$PROFILE_BASE64" | base64 --decode > "$CERT_DIR/profile.mobileprovision"
+        PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i "$CERT_DIR/profile.mobileprovision"))
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp "$CERT_DIR/profile.mobileprovision" ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
+        echo "PROFILE_UUID=$PROFILE_UUID" >> $GITHUB_ENV
+
+    - name: Build Archive
+      run: |
+        xcodebuild archive \
+          -project QuickUnzip.xcodeproj \
+          -scheme QuickUnzip \
+          -configuration Release \
+          -archivePath $RUNNER_TEMP/QuickUnzip.xcarchive \
+          -destination "generic/platform=iOS" \
+          CODE_SIGN_STYLE=Manual \
+          CODE_SIGN_IDENTITY="iPhone Distribution" \
+          DEVELOPMENT_TEAM=FGPLBBNUSZ \
+          PROVISIONING_PROFILE_SPECIFIER="$PROFILE_UUID" \
+          PROVISIONING_PROFILE="$PROFILE_UUID" \
+          PRODUCT_BUNDLE_IDENTIFIER=app.mango7143.test8374
+
+    - name: Export IPA
+      run: |
+        cat > $RUNNER_TEMP/ExportOptions.plist << 'PLIST'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>release-testing</string>
+            <key>teamID</key>
+            <string>FGPLBBNUSZ</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+                <key>app.mango7143.test8374</key>
+        PLIST
+
+        echo "        <string>$PROFILE_UUID</string>" >> $RUNNER_TEMP/ExportOptions.plist
+
+        cat >> $RUNNER_TEMP/ExportOptions.plist << 'PLIST'
+            </dict>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>thinning</key>
+            <string>&lt;none&gt;</string>
+        </dict>
+        </plist>
+        PLIST
+
+        xcodebuild -exportArchive \
+          -archivePath $RUNNER_TEMP/QuickUnzip.xcarchive \
+          -exportPath $RUNNER_TEMP/export \
+          -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist
+
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: QuickUnzip-IPA
+        path: ${{ runner.temp }}/export/*.ipa
