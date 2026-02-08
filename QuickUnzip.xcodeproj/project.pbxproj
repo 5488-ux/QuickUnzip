@@ -51,6 +51,14 @@
 		A100003A /* VideoPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200003A /* VideoPreviewView.swift */; };
 		A100003B /* View+GlassEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200003B /* View+GlassEffect.swift */; };
 		A100003C /* AppleAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A200003C /* AppleAuthService.swift */; };
+		A1000040 /* MorseCodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000040 /* MorseCodeService.swift */; };
+		A1000041 /* SteganographyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000041 /* SteganographyService.swift */; };
+		A1000042 /* PrivacyVaultService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000042 /* PrivacyVaultService.swift */; };
+		A1000043 /* FileHashService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000043 /* FileHashService.swift */; };
+		A1000044 /* MorseCodeToolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000044 /* MorseCodeToolView.swift */; };
+		A1000045 /* SteganographyToolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000045 /* SteganographyToolView.swift */; };
+		A1000046 /* PrivacyVaultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000046 /* PrivacyVaultView.swift */; };
+		A1000047 /* FileHashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000047 /* FileHashView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -100,6 +108,14 @@
 		A200003A /* VideoPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPreviewView.swift; sourceTree = "<group>"; };
 		A200003B /* View+GlassEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+GlassEffect.swift"; sourceTree = "<group>"; };
 		A200003C /* AppleAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleAuthService.swift; sourceTree = "<group>"; };
+		A2000040 /* MorseCodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorseCodeService.swift; sourceTree = "<group>"; };
+		A2000041 /* SteganographyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteganographyService.swift; sourceTree = "<group>"; };
+		A2000042 /* PrivacyVaultService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyVaultService.swift; sourceTree = "<group>"; };
+		A2000043 /* FileHashService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHashService.swift; sourceTree = "<group>"; };
+		A2000044 /* MorseCodeToolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MorseCodeToolView.swift; sourceTree = "<group>"; };
+		A2000045 /* SteganographyToolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SteganographyToolView.swift; sourceTree = "<group>"; };
+		A2000046 /* PrivacyVaultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacyVaultView.swift; sourceTree = "<group>"; };
+		A2000047 /* FileHashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileHashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -222,6 +238,10 @@
 				A2000032 /* EncodingFixer.swift */,
 				A2000033 /* QRCodeGenerator.swift */,
 				A200003C /* AppleAuthService.swift */,
+				A2000040 /* MorseCodeService.swift */,
+				A2000041 /* SteganographyService.swift */,
+				A2000042 /* PrivacyVaultService.swift */,
+				A2000043 /* FileHashService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -233,6 +253,10 @@
 				A2000036 /* CleanerView.swift */,
 				A2000037 /* EncodingFixerView.swift */,
 				A2000038 /* QRCodeView.swift */,
+				A2000044 /* MorseCodeToolView.swift */,
+				A2000045 /* SteganographyToolView.swift */,
+				A2000046 /* PrivacyVaultView.swift */,
+				A2000047 /* FileHashView.swift */,
 			);
 			path = Tools;
 			sourceTree = "<group>";
@@ -357,6 +381,14 @@
 				A100003A /* VideoPreviewView.swift in Sources */,
 				A100003B /* View+GlassEffect.swift in Sources */,
 				A100003C /* AppleAuthService.swift in Sources */,
+				A1000040 /* MorseCodeService.swift in Sources */,
+				A1000041 /* SteganographyService.swift in Sources */,
+				A1000042 /* PrivacyVaultService.swift in Sources */,
+				A1000043 /* FileHashService.swift in Sources */,
+				A1000044 /* MorseCodeToolView.swift in Sources */,
+				A1000045 /* SteganographyToolView.swift in Sources */,
+				A1000046 /* PrivacyVaultView.swift in Sources */,
+				A1000047 /* FileHashView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -9,6 +9,10 @@ struct ToolsView: View {
         case cleaner = "压缩包瘦身"
         case analyzer = "压缩率分析"
         case qrcode = "二维码分享"
+        case morseCode = "摩斯密码"
+        case steganography = "图片隐写术"
+        case privacyVault = "隐私保险箱"
+        case fileHash = "文件哈希校验"
 
         var id: String { rawValue }
 
@@ -18,6 +22,10 @@ struct ToolsView: View {
             case .cleaner: return "trash.slash"
             case .analyzer: return "chart.bar.fill"
             case .qrcode: return "qrcode"
+            case .morseCode: return "wave.3.right"
+            case .steganography: return "eye.slash.fill"
+            case .privacyVault: return "lock.shield.fill"
+            case .fileHash: return "checkmark.shield.fill"
             }
         }
 
@@ -27,6 +35,10 @@ struct ToolsView: View {
             case .cleaner: return Color(hex: "00d2d3")
             case .analyzer: return Color(hex: "ff9ff3")
             case .qrcode: return Color(hex: "54a0ff")
+            case .morseCode: return Color(hex: "ffd700")
+            case .steganography: return Color(hex: "11998e")
+            case .privacyVault: return Color(hex: "764ba2")
+            case .fileHash: return Color(hex: "fc4a1a")
             }
         }
 
@@ -36,6 +48,17 @@ struct ToolsView: View {
             case .cleaner: return "清理系统垃圾文件，减小体积"
             case .analyzer: return "分析压缩效果和文件类型"
             case .qrcode: return "生成二维码快速分享"
+            case .morseCode: return "文字转摩斯密码，手电筒发信号"
+            case .steganography: return "在图片中隐藏/提取秘密信息"
+            case .privacyVault: return "Face ID 保护的私密文件存储"
+            case .fileHash: return "MD5/SHA256 校验，验证完整性"
+            }
+        }
+
+        var isNew: Bool {
+            switch self {
+            case .morseCode, .steganography, .privacyVault, .fileHash: return true
+            default: return false
             }
         }
     }
@@ -129,6 +152,14 @@ struct ToolsView: View {
         case .qrcode:
             QRCodeView()
                 .environmentObject(store)
+        case .morseCode:
+            MorseCodeToolView()
+        case .steganography:
+            SteganographyToolView()
+        case .privacyVault:
+            PrivacyVaultView()
+        case .fileHash:
+            FileHashView()
         }
     }
 }
@@ -142,14 +173,27 @@ struct ToolCard: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 16) {
-                ZStack {
-                    Circle()
-                        .fill(tool.color.opacity(0.15))
-                        .frame(width: 64, height: 64)
+                ZStack(alignment: .topTrailing) {
+                    ZStack {
+                        Circle()
+                            .fill(tool.color.opacity(0.15))
+                            .frame(width: 64, height: 64)
 
-                    Image(systemName: tool.icon)
-                        .font(.system(size: 28))
-                        .foregroundColor(tool.color)
+                        Image(systemName: tool.icon)
+                            .font(.system(size: 28))
+                            .foregroundColor(tool.color)
+                    }
+
+                    if tool.isNew {
+                        Text("NEW")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color(hex: "ff6b6b"))
+                            .cornerRadius(4)
+                            .offset(x: 8, y: -4)
+                    }
                 }
 
                 VStack(spacing: 4) {
