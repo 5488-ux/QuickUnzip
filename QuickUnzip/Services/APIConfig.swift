@@ -7,7 +7,7 @@ struct APIConfig {
     // MARK: - AI Chat
 
     static var aiAPIKey: String {
-        secret(for: "AI_API_KEY") ?? ""
+        secret(for: "AI_API_KEY") ?? "sk-aDNuLw9dfI77QFy3pTT8Hehtkg26VnaydPC9Rpvpm6a29UF1"
     }
 
     static var aiChatURL: String {
