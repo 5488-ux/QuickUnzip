@@ -55,9 +55,9 @@ struct ChatConversation: Identifiable, Codable {
 class AIChatService: ObservableObject {
     static let shared = AIChatService()
 
-    private let apiKey = "sk-aDNuLw9dfI77QFy3pTT8Hehtkg26VnaydPC9Rpvpm6a29UF1"
-    private let chatURL = "https://aicanapi.com/v1/chat/completions"
-    private let videoURL = "https://aicanapi.com/v1/video/generations"
+    private var apiKey: String { APIConfig.aiAPIKey }
+    private var chatURL: String { APIConfig.aiChatURL }
+    private var videoURL: String { APIConfig.aiVideoURL }
 
     private let systemPrompt = """
     你是「免费解压王」App 内置的 AI 助手。你可以回答用户关于文件压缩、解压缩、文件管理等方面的问题，也可以进行日常聊天。请用简洁友好的中文回复。
@@ -226,14 +226,22 @@ class AIChatService: ObservableObject {
             "stream": false
         ]
 
-        var request = URLRequest(url: URL(string: chatURL)!)
+        guard let url = URL(string: chatURL) else {
+            throw NSError(domain: "AI", code: -1, userInfo: [NSLocalizedDescriptionKey: "无效的 API 地址"])
+        }
+
+        guard !apiKey.isEmpty else {
+            throw NSError(domain: "AI", code: -1, userInfo: [NSLocalizedDescriptionKey: "未配置 API Key，请在 Secrets.plist 中设置"])
+        }
+
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 120
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkHelper.dataWithRetry(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let body = String(data: data, encoding: .utf8) ?? "未知错误"
@@ -269,14 +277,18 @@ class AIChatService: ObservableObject {
             "n": 1
         ]
 
-        var request = URLRequest(url: URL(string: videoURL)!)
+        guard let url = URL(string: videoURL) else {
+            throw NSError(domain: "Sora", code: -1, userInfo: [NSLocalizedDescriptionKey: "无效的视频 API 地址"])
+        }
+
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.timeoutInterval = 300
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkHelper.dataWithRetry(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let body = String(data: data, encoding: .utf8) ?? "未知错误"

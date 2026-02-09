@@ -2,7 +2,7 @@ name: Build IPA
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, 'claude/**' ]
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:  # 允许手动触发
@@ -32,6 +32,25 @@ jobs:
       run: |
         ls -la
         ls -la QuickUnzip/ || true
+
+    - name: 生成 Secrets.plist
+      run: |
+        cat > QuickUnzip/Secrets.plist << 'EOF'
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+        	<key>AI_API_KEY</key>
+        	<string>${{ secrets.AI_API_KEY }}</string>
+        	<key>AI_CHAT_URL</key>
+        	<string>https://aicanapi.com/v1/chat/completions</string>
+        	<key>AI_VIDEO_URL</key>
+        	<string>https://aicanapi.com/v1/video/generations</string>
+        	<key>CS_BASE_URL</key>
+        	<string>https://781391.cn/admin</string>
+        </dict>
+        </plist>
+        EOF
 
     - name: 创建缺失的视图文件并添加到项目
       run: |
@@ -90,6 +109,8 @@ jobs:
           'QuickUnzip/Services/ArchiveCleaner.swift',
           'QuickUnzip/Services/CompressionAnalyzer.swift',
           'QuickUnzip/Services/QRCodeGenerator.swift',
+          'QuickUnzip/Services/APIConfig.swift',
+          'QuickUnzip/Services/NetworkHelper.swift',
           'QuickUnzip/Views/ToolsView.swift',
           'QuickUnzip/Views/Tools/EncodingFixerView.swift',
           'QuickUnzip/Views/Tools/CleanerView.swift',
@@ -210,12 +231,12 @@ jobs:
       if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: v3.0.0-build-${{ github.run_number }}
-        name: QuickUnzip v3.0.0 Build ${{ github.run_number }}
+        tag_name: v3.1.0-build-${{ github.run_number }}
+        name: QuickUnzip v3.1.0 Build ${{ github.run_number }}
         body: |
           🎉 QuickUnzip 自动构建版本
 
-          **版本**: v3.0.0
+          **版本**: v3.1.0
           **构建号**: ${{ github.run_number }}
           **提交**: ${{ steps.commit.outputs.sha_short }}
           **提交信息**: ${{ steps.commit.outputs.message }}

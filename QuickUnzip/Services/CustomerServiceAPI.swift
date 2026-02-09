@@ -55,7 +55,7 @@ struct UnreadCountResponse: Codable {
 class CustomerServiceAPI: ObservableObject {
     static let shared = CustomerServiceAPI()
 
-    private let baseURL = "https://781391.cn/admin"
+    private var baseURL: String { APIConfig.customerServiceBaseURL }
     private let messagesKey = "cs_cached_messages"
 
     @Published var unreadCount: Int = 0
@@ -117,7 +117,7 @@ class CustomerServiceAPI: ObservableObject {
     // MARK: - Register User
 
     func registerUser(nickname: String = "用户") async throws {
-        let url = URL(string: "\(baseURL)/api.php?action=register")!
+        guard let url = URL(string: "\(baseURL)/api.php?action=register") else { return }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -128,14 +128,14 @@ class CustomerServiceAPI: ObservableObject {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (_, _) = try await URLSession.shared.data(for: request)
+        let (_, _) = try await NetworkHelper.dataWithRetry(for: request)
         UserDefaults.standard.set(nickname, forKey: "cs_nickname")
     }
 
     // MARK: - Send Message
 
     func sendMessage(_ content: String) async throws -> Bool {
-        let url = URL(string: "\(baseURL)/api.php?action=send")!
+        guard let url = URL(string: "\(baseURL)/api.php?action=send") else { return false }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -146,7 +146,7 @@ class CustomerServiceAPI: ObservableObject {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (data, _) = try await URLSession.shared.data(for: request)
+        let (data, _) = try await NetworkHelper.dataWithRetry(for: request)
         let response = try JSONDecoder().decode(SendResponse.self, from: data)
 
         return response.success ?? false
@@ -160,8 +160,8 @@ class CustomerServiceAPI: ObservableObject {
             urlString += "&last_id=\(lastId)"
         }
 
-        let url = URL(string: urlString)!
-        let (data, _) = try await URLSession.shared.data(from: url)
+        guard let url = URL(string: urlString) else { return [] }
+        let (data, _) = try await NetworkHelper.dataWithRetry(from: url)
         let response = try JSONDecoder().decode(MessagesResponse.self, from: data)
 
         // 缓存消息到本地
@@ -184,8 +184,8 @@ class CustomerServiceAPI: ObservableObject {
 
     func checkUnreadCount() async {
         do {
-            let url = URL(string: "\(baseURL)/api.php?action=unread_count&device_id=\(deviceId)")!
-            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let url = URL(string: "\(baseURL)/api.php?action=unread_count&device_id=\(deviceId)") else { return }
+            let (data, _) = try await NetworkHelper.dataWithRetry(from: url)
             let response = try JSONDecoder().decode(UnreadCountResponse.self, from: data)
 
             await MainActor.run {
@@ -200,7 +200,7 @@ class CustomerServiceAPI: ObservableObject {
 
     func markAsRead() async {
         do {
-            let url = URL(string: "\(baseURL)/api.php?action=mark_read")!
+            guard let url = URL(string: "\(baseURL)/api.php?action=mark_read") else { return }
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -208,7 +208,7 @@ class CustomerServiceAPI: ObservableObject {
             let body: [String: Any] = ["device_id": deviceId]
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-            let _ = try await URLSession.shared.data(for: request)
+            let _ = try await NetworkHelper.dataWithRetry(for: request)
 
             await MainActor.run {
                 self.unreadCount = 0

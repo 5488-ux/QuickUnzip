@@ -12,7 +12,7 @@ class AppleAuthService: NSObject, ObservableObject {
     private let appleUserNameKey = "apple_user_name"
     private let appleUserEmailKey = "apple_user_email"
 
-    private let baseURL = "https://781391.cn/admin"
+    private var baseURL: String { APIConfig.customerServiceBaseURL }
 
     private var deviceId: String {
         if let id = UserDefaults.standard.string(forKey: "cs_device_id") {
@@ -99,11 +99,13 @@ class AppleAuthService: NSObject, ObservableObject {
         ]
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
-        URLSession.shared.dataTask(with: request) { _, _, error in
-            if let error = error {
+        Task {
+            do {
+                let _ = try await NetworkHelper.dataWithRetry(for: request)
+            } catch {
                 print("Apple login server sync failed: \(error)")
             }
-        }.resume()
+        }
     }
 }
 
