@@ -139,12 +139,13 @@ class ArchiveExtractor {
 
         let totalEntries = Int(readUInt16(data, eocd + 10))
         let centralDirOffset = Int(readUInt32(data, eocd + 16))
+        guard centralDirOffset >= 0, centralDirOffset < data.count else { throw ExtractError.invalidArchive }
 
         var offset = centralDirOffset
         var extractedCount = 0
 
         for i in 0..<totalEntries {
-            guard offset + 46 <= data.count else { break }
+            guard offset >= 0, offset + 46 <= data.count else { break }
 
             let sig = readUInt32(data, offset)
             guard sig == 0x02014b50 else { break }
@@ -164,22 +165,26 @@ class ArchiveExtractor {
             let commentLen = Int(readUInt16(data, offset + 32))
             let localHeaderOffset = Int(readUInt32(data, offset + 42))
 
-            let nameData = data[offset + 46 ..< offset + 46 + nameLen]
+            // 安全切片读取文件名
+            guard let nameData = safeSlice(data, from: offset + 46, count: nameLen) else { break }
             let fileName = String(data: nameData, encoding: .utf8) ?? String(data: nameData, encoding: .ascii) ?? "unknown"
 
             offset += 46 + nameLen + extraLen + commentLen
 
             progress?(Double(i) / Double(totalEntries), fileName)
 
-            guard localHeaderOffset + 30 <= data.count else { continue }
+            guard localHeaderOffset >= 0, localHeaderOffset + 30 <= data.count else { continue }
             let localSig = readUInt32(data, localHeaderOffset)
             guard localSig == 0x04034b50 else { continue }
 
             let localNameLen = Int(readUInt16(data, localHeaderOffset + 26))
             let localExtraLen = Int(readUInt16(data, localHeaderOffset + 28))
             let dataOffset = localHeaderOffset + 30 + localNameLen + localExtraLen
+            guard dataOffset >= 0, dataOffset <= data.count else { continue }
 
-            let filePath = destination.appendingPathComponent(fileName)
+            // 防止路径遍历攻击
+            let sanitizedName = fileName.replacingOccurrences(of: "../", with: "")
+            let filePath = destination.appendingPathComponent(sanitizedName)
 
             if fileName.hasSuffix("/") {
                 try fm.createDirectory(at: filePath, withIntermediateDirectories: true)
@@ -188,16 +193,19 @@ class ArchiveExtractor {
                 try fm.createDirectory(at: dir, withIntermediateDirectories: true)
 
                 if compressionMethod == 0 {
-                    let end = min(dataOffset + uncompressedSize, data.count)
-                    let fileData = data[dataOffset..<end]
-                    try Data(fileData).write(to: filePath)
+                    // Stored
+                    if let fileData = safeSlice(data, from: dataOffset, count: min(uncompressedSize, data.count - dataOffset)) {
+                        try fileData.write(to: filePath)
+                    }
                 } else if compressionMethod == 8 {
-                    let end = min(dataOffset + compressedSize, data.count)
-                    let compressedData = Data(data[dataOffset..<end])
-                    if let decompressed = decompressDeflate(compressedData, expectedSize: uncompressedSize) {
-                        try decompressed.write(to: filePath)
-                    } else {
-                        try compressedData.write(to: filePath)
+                    // Deflate
+                    let available = min(compressedSize, data.count - dataOffset)
+                    if available > 0, let compressedData = safeSlice(data, from: dataOffset, count: available) {
+                        if let decompressed = decompressDeflate(compressedData, expectedSize: uncompressedSize) {
+                            try decompressed.write(to: filePath)
+                        } else {
+                            try compressedData.write(to: filePath)
+                        }
                     }
                 } else {
                     continue
@@ -232,8 +240,8 @@ class ArchiveExtractor {
             let extraLen = Int(readUInt16(data, offset + 30))
             let commentLen = Int(readUInt16(data, offset + 32))
 
-            let nameData = data[offset + 46 ..< offset + 46 + nameLen]
-            if let name = String(data: nameData, encoding: .utf8) ?? String(data: nameData, encoding: .ascii) {
+            if let nameData = safeSlice(data, from: offset + 46, count: nameLen),
+               let name = String(data: nameData, encoding: .utf8) ?? String(data: nameData, encoding: .ascii) {
                 entries.append(name)
             }
 
@@ -280,15 +288,17 @@ class ArchiveExtractor {
         let headerStart = 32 + Int(nextHeaderOffset)
         let headerEnd = headerStart + Int(nextHeaderSize)
 
-        guard headerEnd <= data.count else { throw ExtractError.invalidArchive }
+        guard headerStart > 32, headerStart <= data.count, headerEnd <= data.count else {
+            throw ExtractError.invalidArchive
+        }
 
         progress?(0.3, "正在解压 LZMA 数据...")
 
-        // For now, try to extract as a single LZMA stream
-        // This is a simplified approach - real 7z has multiple streams
-        let compressedData = data[32..<headerStart]
+        guard let compressedData = safeSlice(data, from: 32, count: headerStart - 32) else {
+            throw ExtractError.invalidArchive
+        }
 
-        if let decompressed = decompressLZMA(Data(compressedData)) {
+        if let decompressed = decompressLZMA(compressedData) {
             // Try to parse as a file
             let outputPath = destination.appendingPathComponent("extracted_data")
             try decompressed.write(to: outputPath)
@@ -483,58 +493,54 @@ class ArchiveExtractor {
         var extractedCount = 0
 
         while offset + 512 <= data.count {
-            // Read TAR header (512 bytes)
-            let headerData = data[offset..<offset+512]
+            // 安全读取 TAR 头（512 字节）
+            guard let headerData = safeSlice(data, from: offset, count: 512) else { break }
 
-            // Check for empty block (end of archive)
+            // 检查空块（归档结束标志）
             if headerData.allSatisfy({ $0 == 0 }) {
                 break
             }
 
-            // Parse file name (first 100 bytes)
+            // 解析文件名（前 100 字节）
             let nameData = headerData.prefix(100)
             guard let fileName = String(data: nameData, encoding: .utf8)?
-                .trimmingCharacters(in: CharacterSet(charactersIn: "\0")) else {
+                .trimmingCharacters(in: CharacterSet(charactersIn: "\0")),
+                  !fileName.isEmpty else {
                 offset += 512
                 continue
             }
 
-            if fileName.isEmpty {
-                break
-            }
-
-            // Parse file size (octal string at offset 124, 12 bytes)
-            let sizeData = data[offset+124..<offset+136]
+            // 解析文件大小（八进制字符串，头部偏移 124，12 字节）
+            guard let sizeData = safeSlice(data, from: offset + 124, count: 12) else { break }
             let sizeString = String(data: sizeData, encoding: .ascii)?
                 .trimmingCharacters(in: CharacterSet(charactersIn: " \0")) ?? "0"
             let fileSize = Int(sizeString, radix: 8) ?? 0
 
-            // Parse file type (offset 156, 1 byte)
-            let fileType = headerData[156]
+            // 解析文件类型（头部偏移 156，1 字节）
+            let fileType: UInt8 = (offset + 156 < data.count) ? data[offset + 156] : 0
 
             progress?(Double(offset) / Double(data.count), fileName)
 
-            offset += 512 // Move past header
+            offset += 512 // 跳过头部
 
-            let filePath = destination.appendingPathComponent(fileName)
+            // 防止路径遍历
+            let sanitizedName = fileName.replacingOccurrences(of: "../", with: "")
+            let filePath = destination.appendingPathComponent(sanitizedName)
 
             if fileType == 0x35 || fileName.hasSuffix("/") {
-                // Directory
                 try fm.createDirectory(at: filePath, withIntermediateDirectories: true)
             } else if fileType == 0x30 || fileType == 0 {
-                // Regular file
                 let dir = filePath.deletingLastPathComponent()
                 try fm.createDirectory(at: dir, withIntermediateDirectories: true)
 
-                if fileSize > 0 && offset + fileSize <= data.count {
-                    let fileData = data[offset..<offset+fileSize]
-                    try Data(fileData).write(to: filePath)
+                if fileSize > 0, let fileData = safeSlice(data, from: offset, count: min(fileSize, data.count - offset)) {
+                    try fileData.write(to: filePath)
                 }
 
                 extractedCount += 1
             }
 
-            // Move to next file (512-byte aligned)
+            // 512 字节对齐
             let padding = (512 - (fileSize % 512)) % 512
             offset += fileSize + padding
         }
@@ -565,6 +571,7 @@ class ArchiveExtractor {
 
         // Skip optional fields based on flags
         if flags & 0x04 != 0 { // FEXTRA
+            guard offset + 2 <= data.count else { throw ExtractError.invalidArchive }
             let extraLen = Int(readUInt16(data, offset))
             offset += 2 + extraLen
         }
@@ -628,36 +635,62 @@ class ArchiveExtractor {
         progress?(1.0, "完成")
     }
 
-    // MARK: - Helpers
+    // MARK: - Safe Helpers (带越界保护)
+
+    /// 最大解压缓冲区：256 MB
+    private static let maxDecompressBufferSize = 256 * 1024 * 1024
 
     private static func findEOCD(in data: Data) -> Int? {
         let minSize = 22
+        guard data.count >= minSize else { return nil }
         let maxCommentSize = min(65535, data.count - minSize)
         for i in 0...maxCommentSize {
             let pos = data.count - minSize - i
-            if pos >= 0 && readUInt32(data, pos) == 0x06054b50 {
+            if pos >= 0 && safeReadUInt32(data, pos) == 0x06054b50 {
                 return pos
             }
         }
         return nil
     }
 
+    // 安全读取：越界返回 0，不会崩溃
     private static func readUInt16(_ data: Data, _ offset: Int) -> UInt16 {
-        data.withUnsafeBytes { ptr in
+        safeReadUInt16(data, offset)
+    }
+
+    private static func readUInt32(_ data: Data, _ offset: Int) -> UInt32 {
+        safeReadUInt32(data, offset)
+    }
+
+    private static func readUInt64(_ data: Data, _ offset: Int) -> UInt64 {
+        safeReadUInt64(data, offset)
+    }
+
+    private static func safeReadUInt16(_ data: Data, _ offset: Int) -> UInt16 {
+        guard offset >= 0, offset + 2 <= data.count else { return 0 }
+        return data.withUnsafeBytes { ptr in
             ptr.load(fromByteOffset: offset, as: UInt16.self).littleEndian
         }
     }
 
-    private static func readUInt32(_ data: Data, _ offset: Int) -> UInt32 {
-        data.withUnsafeBytes { ptr in
+    private static func safeReadUInt32(_ data: Data, _ offset: Int) -> UInt32 {
+        guard offset >= 0, offset + 4 <= data.count else { return 0 }
+        return data.withUnsafeBytes { ptr in
             ptr.load(fromByteOffset: offset, as: UInt32.self).littleEndian
         }
     }
 
-    private static func readUInt64(_ data: Data, _ offset: Int) -> UInt64 {
-        data.withUnsafeBytes { ptr in
+    private static func safeReadUInt64(_ data: Data, _ offset: Int) -> UInt64 {
+        guard offset >= 0, offset + 8 <= data.count else { return 0 }
+        return data.withUnsafeBytes { ptr in
             ptr.load(fromByteOffset: offset, as: UInt64.self).littleEndian
         }
+    }
+
+    /// 安全切片：越界返回 nil
+    private static func safeSlice(_ data: Data, from: Int, count: Int) -> Data? {
+        guard from >= 0, count >= 0, from + count <= data.count else { return nil }
+        return Data(data[from..<from + count])
     }
 
     private static func readVarInt(_ data: Data, _ offset: Int) -> (UInt64, Int) {
@@ -666,7 +699,7 @@ class ArchiveExtractor {
         var bytesRead = 0
         var currentOffset = offset
 
-        while currentOffset < data.count {
+        while currentOffset >= 0 && currentOffset < data.count {
             let byte = data[currentOffset]
             result |= UInt64(byte & 0x7F) << shift
             bytesRead += 1
@@ -676,13 +709,16 @@ class ArchiveExtractor {
                 break
             }
             shift += 7
+            if shift > 63 { break }
         }
 
-        return (result, bytesRead)
+        return (result, max(bytesRead, 1))
     }
 
     private static func decompressDeflate(_ data: Data, expectedSize: Int) -> Data? {
-        let bufferSize = max(expectedSize, 1024)
+        guard data.count > 0 else { return nil }
+        // 限制缓冲区大小，防止 OOM
+        let bufferSize = min(max(expectedSize, 1024), maxDecompressBufferSize)
         var decompressed = Data(count: bufferSize)
         let result = data.withUnsafeBytes { srcPtr -> Int in
             decompressed.withUnsafeMutableBytes { dstPtr -> Int in
@@ -703,9 +739,9 @@ class ArchiveExtractor {
     }
 
     private static func decompressLZMA(_ data: Data) -> Data? {
-        // Try different buffer sizes
+        guard data.count > 0 else { return nil }
         for multiplier in [1, 2, 4, 8, 16] {
-            let bufferSize = data.count * multiplier
+            let bufferSize = min(data.count * multiplier, maxDecompressBufferSize)
             var decompressed = Data(count: bufferSize)
             let result = data.withUnsafeBytes { srcPtr -> Int in
                 decompressed.withUnsafeMutableBytes { dstPtr -> Int in
@@ -724,6 +760,8 @@ class ArchiveExtractor {
                 decompressed.count = result
                 return decompressed
             }
+            // 达到上限就不再尝试更大的缓冲区
+            if bufferSize >= maxDecompressBufferSize { break }
         }
         return nil
     }
